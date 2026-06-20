@@ -5,6 +5,7 @@ features against the target column `status`, and writes a structured Markdown
 report. Missing columns are reported in the output instead of failing.
 """
 
+import argparse
 import os
 import pandas as pd
 
@@ -51,9 +52,9 @@ def pct(n, total):
     return f"{(100.0 * n / total):.2f}%" if total else "N/A"
 
 
-def main():
+def main(data_path=DATA_PATH, output_path=OUTPUT_PATH):
     lines = []
-    df = pd.read_excel(DATA_PATH)
+    df = pd.read_excel(data_path)
     n_rows, n_cols = df.shape
 
     # Determine which requested columns are present / missing.
@@ -67,7 +68,7 @@ def main():
     # --- 1. Dataset overview --------------------------------------------
     lines.append("# Claim Approval Feature Dataset — EDA Report\n")
     lines.append("## 1. Dataset Overview\n")
-    lines.append(f"- **File path:** `{DATA_PATH}`")
+    lines.append(f"- **File path:** `{data_path}`")
     lines.append(f"- **Number of rows:** {n_rows}")
     lines.append(f"- **Number of columns:** {n_cols}")
     lines.append(f"- **Target column:** `{TARGET}`"
@@ -284,12 +285,16 @@ def main():
 
     lines.append("")
 
-    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as fh:
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines))
 
-    print(f"Report written to {OUTPUT_PATH} ({n_rows} rows, {n_cols} cols)")
+    print(f"Report written to {output_path} ({n_rows} rows, {n_cols} cols)")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", default=DATA_PATH, help="Path to the input .xlsx dataset")
+    parser.add_argument("--output", default=OUTPUT_PATH, help="Path to the output .md report")
+    cli = parser.parse_args()
+    main(cli.input, cli.output)
