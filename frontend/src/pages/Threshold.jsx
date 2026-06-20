@@ -7,6 +7,7 @@ export default function Threshold({ data }) {
   const ta = data.threshold_analysis;
   const selected = data.best_model.threshold;
   const cm = data.best_model.confusion_matrix_test; // [[tn,fp],[fn,tp]]
+  const modelLabel = `${data.best_model.model} (${data.best_model.stage})`;
 
   const chartData = ta.map((r) => ({
     threshold: r.threshold,
@@ -30,13 +31,18 @@ export default function Threshold({ data }) {
     <div>
       <h1>Threshold Tuning</h1>
       <p className="subtitle">
+        Model being tuned:{" "}
+        <span className="badge best" style={{ fontSize: 13 }}>{modelLabel}</span>
+        {" "}— the selected best model.
+      </p>
+      <p className="subtitle">
         We do not use the default 0.5 cut-off. Thresholds 0.05–0.95 are evaluated on the
         validation set; the one maximising F1 for Declined is selected:{" "}
         <span className="pill">selected threshold = {selected}</span>
       </p>
 
       <div className="panel">
-        <h2 style={{ marginTop: 0 }}>Precision / Recall / F1 vs Threshold (validation)</h2>
+        <h2 style={{ marginTop: 0 }}>{modelLabel} — Precision / Recall / F1 vs Threshold (validation)</h2>
         <ResponsiveContainer width="100%" height={340}>
           <LineChart data={chartData}>
             <CartesianGrid stroke="#334155" strokeDasharray="3 3" />
@@ -60,7 +66,7 @@ export default function Threshold({ data }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 20 }}>
         <div className="panel">
-          <h2 style={{ marginTop: 0 }}>Precision–Recall Curve (best model, test)</h2>
+          <h2 style={{ marginTop: 0 }}>{modelLabel} — Precision–Recall Curve (test)</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={prData}>
               <CartesianGrid stroke="#334155" strokeDasharray="3 3" />

@@ -44,7 +44,7 @@ THRESHOLD_MIN = 0.05
 THRESHOLD_MAX = 0.95
 
 # Optuna trial counts (override with env var for quick smoke runs).
-N_TRIALS = int(os.environ.get("N_TRIALS", "30"))
+N_TRIALS = int(os.environ.get("N_TRIALS", "50"))
 
 MLFLOW_EXPERIMENT = "claim_approval_optimization"
 
