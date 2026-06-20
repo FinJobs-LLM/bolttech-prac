@@ -1,0 +1,99 @@
+{
+  "model_type": "CatBoost",
+  "stage": "optimized",
+  "imbalance_strategy": "class_weights",
+  "params": {
+    "iterations": 600,
+    "depth": 4,
+    "learning_rate": 0.1530883741573138,
+    "l2_leaf_reg": 1.6709557931179373,
+    "bagging_temperature": 0.9868869366005173,
+    "random_strength": 1.5444895385933148,
+    "border_count": 76
+  },
+  "threshold": 0.44,
+  "feature_cols": [
+    "excessFee",
+    "rrp",
+    "oldBalanceRRP",
+    "remaining_rrp_ratio",
+    "used_rrp_amount",
+    "has_prior_rrp_usage",
+    "coverage",
+    "policy_duration_months",
+    "policy_start_year",
+    "policy_start_month",
+    "days_from_purchase_to_policy",
+    "retailerName",
+    "deviceType",
+    "channel",
+    "claimType",
+    "country",
+    "turnOnOff",
+    "touchScreen",
+    "smashed",
+    "frontCamera",
+    "backCamera",
+    "frontOrBackCamera",
+    "audio",
+    "mic",
+    "buttons"
+  ],
+  "num_cols": [
+    "excessFee",
+    "rrp",
+    "oldBalanceRRP",
+    "remaining_rrp_ratio",
+    "used_rrp_amount",
+    "policy_duration_months",
+    "policy_start_year",
+    "policy_start_month",
+    "days_from_purchase_to_policy"
+  ],
+  "cat_cols": [
+    "has_prior_rrp_usage",
+    "coverage",
+    "retailerName",
+    "deviceType",
+    "channel",
+    "claimType",
+    "country",
+    "turnOnOff",
+    "touchScreen",
+    "smashed",
+    "frontCamera",
+    "backCamera",
+    "frontOrBackCamera",
+    "audio",
+    "mic",
+    "buttons"
+  ],
+  "positive_class": "Declined",
+  "negative_class": "Completed",
+  "test_metrics": {
+    "threshold": 0.44,
+    "pr_auc": 0.30266953368982064,
+    "roc_auc": 0.6790764382676148,
+    "f1_declined": 0.3269230769230769,
+    "recall_declined": 0.75,
+    "precision_declined": 0.20901639344262296,
+    "balanced_accuracy": 0.6098901098901099,
+    "accuracy": 0.5138888888888888,
+    "tn": 171,
+    "fp": 193,
+    "fn": 17,
+    "tp": 51,
+    "false_positives": 193,
+    "false_negatives": 17,
+    "confusion_matrix": [
+      [
+        171,
+        193
+      ],
+      [
+        17,
+        51
+      ]
+    ]
+  }
+}

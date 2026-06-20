@@ -1,0 +1,9 @@
+model,stage,imbalance_strategy,threshold,val_pr_auc,test_pr_auc,test_roc_auc,test_f1_declined,test_recall_declined,test_precision_declined,test_balanced_accuracy,test_accuracy,false_positives,false_negatives,is_best
+CatBoost,optimized,class_weights,0.44,0.3056,0.3027,0.6791,0.3269,0.75,0.209,0.6099,0.5139,193,17,True
+XGBoost,optimized,scale_pos_weight=1.65,0.19,0.2953,0.2878,0.6514,0.322,0.7647,0.2039,0.6035,0.4931,203,16,False
+LightGBM,optimized,scale_pos_weight=1.19,0.16,0.2848,0.3006,0.6514,0.3145,0.7353,0.2,0.5929,0.4954,200,18,False
+RandomForest,optimized,custom,0.44,0.2678,0.3205,0.6747,0.3344,0.75,0.2152,0.6195,0.5301,186,17,False
+XGBoost,baseline,scale_pos_weight=5.36,0.47,0.2526,0.3047,0.6945,0.3516,0.7059,0.2341,0.6373,0.5903,157,20,False
+CatBoost,baseline,"class_weights={Completed:1, Declined:5.36}",0.46,0.2466,0.2985,0.6607,0.3273,0.6618,0.2174,0.6084,0.5718,162,23,False
+LightGBM,baseline,scale_pos_weight=5.36,0.19,0.244,0.2313,0.6346,0.3333,0.7059,0.2182,0.6167,0.5556,172,20,False
+RandomForest,baseline,class_weight='balanced',0.47,0.2133,0.3264,0.6904,0.3777,0.6471,0.2667,0.6573,0.6644,121,24,False

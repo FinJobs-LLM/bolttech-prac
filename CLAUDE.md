@@ -4,7 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-This is a **data-only practice project** for predicting insurance device-claim approval. There is currently **no code, build system, test suite, or git history** — only a preprocessed dataset under `data/`. Any analysis/modeling code, dependency manifest (e.g. `requirements.txt`/`pyproject.toml`), and run instructions still need to be created. Note: the host `python3` is bare (no `pandas`/`openpyxl`/`scikit-learn` installed), so add and install dependencies before writing dataset code.
+This project predicts insurance device-claim approval (`status`: Declined=1 positive, Completed=0).
+It now contains a full ML system — see `README.md` for the authoritative guide:
+- `src/` — training pipeline (`run_pipeline.py` orchestrates), Optuna optimization, MLflow tracking,
+  threshold tuning, evaluation, explainability, and a FastAPI service (`serve.py`).
+- `frontend/` — Vite + React explainability dashboard.
+- `reports/`, `models/`, `mlruns/` — generated artifacts (run `python src/run_pipeline.py`).
+- `requirements.txt` — Python deps. Use the project `.venv`; LightGBM needs `libgomp1` (`apt-get install -y libgomp1`).
+
+Modeling rules (do not break): optimize/rank on **PR-AUC**, not accuracy; stratified 70/15/15; fit
+preprocessing on train only; the test set is used once; seed 42 everywhere.
 
 ## Layout
 
