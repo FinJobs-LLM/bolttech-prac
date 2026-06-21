@@ -95,5 +95,110 @@
         51
       ]
     ]
-  }
+  },
+  "trained_at": "2026-06-20T17:03:26.231814+00:00",
+  "model_version": "catboost-optimized-20260620",
+  "optuna_trials": 50,
+  "feature_importance": [
+    {
+      "feature": "oldBalanceRRP",
+      "importance": 18.049907
+    },
+    {
+      "feature": "rrp",
+      "importance": 13.533903
+    },
+    {
+      "feature": "touchScreen",
+      "importance": 12.810677
+    },
+    {
+      "feature": "policy_start_month",
+      "importance": 8.159768
+    },
+    {
+      "feature": "excessFee",
+      "importance": 7.209682
+    },
+    {
+      "feature": "audio",
+      "importance": 4.92816
+    },
+    {
+      "feature": "has_prior_rrp_usage",
+      "importance": 4.042169
+    },
+    {
+      "feature": "channel",
+      "importance": 3.895019
+    },
+    {
+      "feature": "policy_duration_months",
+      "importance": 3.613219
+    },
+    {
+      "feature": "days_from_purchase_to_policy",
+      "importance": 3.514211
+    },
+    {
+      "feature": "turnOnOff",
+      "importance": 2.843225
+    },
+    {
+      "feature": "deviceType",
+      "importance": 2.809984
+    },
+    {
+      "feature": "backCamera",
+      "importance": 2.695354
+    },
+    {
+      "feature": "country",
+      "importance": 2.617059
+    },
+    {
+      "feature": "coverage",
+      "importance": 1.964092
+    },
+    {
+      "feature": "policy_start_year",
+      "importance": 1.629987
+    },
+    {
+      "feature": "mic",
+      "importance": 1.296811
+    },
+    {
+      "feature": "frontCamera",
+      "importance": 1.032958
+    },
+    {
+      "feature": "buttons",
+      "importance": 0.879178
+    },
+    {
+      "feature": "claimType",
+      "importance": 0.69377
+    },
+    {
+      "feature": "frontOrBackCamera",
+      "importance": 0.680911
+    },
+    {
+      "feature": "retailerName",
+      "importance": 0.612388
+    },
+    {
+      "feature": "remaining_rrp_ratio",
+      "importance": 0.374068
+    },
+    {
+      "feature": "used_rrp_amount",
+      "importance": 0.113501
+    },
+    {
+      "feature": "smashed",
+      "importance": 0.0
+    }
+  ]
 }

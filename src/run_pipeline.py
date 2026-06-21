@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import tempfile
 import warnings
+from datetime import datetime, timezone
 from pathlib import Path
 
 import joblib
@@ -273,7 +274,11 @@ def main():
 
     # --- 4. Save best model + metadata -----------------------------------
     joblib.dump(best_model, BEST_MODEL_PATH)
+    trained_at = datetime.now(timezone.utc)
     meta = {
+        "model_version": f"{best_model.model_type.lower()}-{best_row['stage']}-"
+                         f"{trained_at.strftime('%Y%m%d')}",
+        "trained_at": trained_at.isoformat(),
         "model_type": best_model.model_type,
         "stage": best_row["stage"],
         "imbalance_strategy": best_row["imbalance_strategy"],
@@ -282,9 +287,11 @@ def main():
         "feature_cols": best_model.feature_cols,
         "num_cols": best_model.num_cols,
         "cat_cols": best_model.cat_cols,
+        "feature_importance": best_extras["feature_importance"],
         "positive_class": POSITIVE_LABEL,
         "negative_class": NEGATIVE_LABEL,
         "test_metrics": best_extras["test_metrics"],
+        "optuna_trials": N_TRIALS,
     }
     BEST_MODEL_META.write_text(json.dumps(meta, indent=2))
 

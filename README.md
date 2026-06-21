@@ -142,6 +142,37 @@ curl -X POST localhost:8000/predict -H 'Content-Type: application/json' \
 Unspecified features are imputed automatically. The decision uses the tuned threshold unless you
 pass `"threshold"` in the request.
 
+### Production serving API (`serve_api.py`)
+
+A second, ops-focused inference service (separate from `serve.py`, which backs the dashboard) with
+health/readiness probes, batch inference, and service metrics:
+
+```bash
+uvicorn serve_api:app --app-dir src --port 8001
+# docs at http://localhost:8001/docs
+```
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | Liveness — process is up. |
+| `GET /ready` | Readiness — model loaded and usable (503 otherwise). |
+| `GET /metadata` | Model version, training date, hyperparameters, test metrics, feature importance. |
+| `POST /predict` | Single-sample inference (validated). |
+| `POST /predict-batch` | Batch inference for `samples: [...]` (1–1000). |
+| `GET /metrics` | Request count, error rate, latency (avg/p50/p95/p99), per-path counts, uptime. |
+
+```bash
+curl -X POST localhost:8001/predict -H 'Content-Type: application/json' \
+  -d '{"features": {"rrp": 1799, "coverage": "ADLD", "claimType": "Theft"}, "threshold": 0.5}'
+
+curl -X POST localhost:8001/predict-batch -H 'Content-Type: application/json' \
+  -d '{"samples": [{"rrp": 1799, "coverage": "ADLD"}, {"rrp": 40000, "claimType": "Liquid Damage"}]}'
+```
+
+Validation returns `422` with a structured `{"error": {...}}` body for unknown feature names,
+wrong numeric types, out-of-range thresholds, or empty batches. If the model artifact is missing,
+`/ready`, `/metadata`, `/predict*` return `503` (run `python src/run_pipeline.py` first).
+
 ## 6. Start the React front-end
 
 ```bash
