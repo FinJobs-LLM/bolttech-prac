@@ -70,7 +70,7 @@ def index():
         "best_model": _META.get("model_type"),
         "endpoints": ["/predict", "/model-summary", "/model-comparison",
                       "/threshold-analysis", "/feature-importance", "/explain",
-                      "/explain-prediction", "/dashboard"],
+                      "/explain-prediction", "/explain-prediction-customer", "/dashboard"],
     }
 
 
@@ -172,6 +172,47 @@ def explain_prediction(req: PredictRequest):
     fi = _META.get("feature_importance") or _DASH.get("best_model", {}).get("feature_importance", [])
     try:
         text = generate_prediction_explanation(prediction, req.features, model_info, fi)
+    except Exception as exc:
+        raise HTTPException(502, f"LLM explanation failed: {type(exc).__name__}: {exc}")
+    return {"prediction": prediction, "explanation": text}
+
+
+@app.post("/explain-prediction-customer")
+def explain_prediction_customer(req: PredictRequest):
+    """Customer-facing, plain-language LLM explanation of THIS claim's prediction.
+
+    The model makes the prediction (recomputed here); the LLM only explains it in
+    simple terms for the customer — it never decides."""
+    _load()
+    if _MODEL is None:
+        raise HTTPException(503, "Model not trained yet. Run src/run_pipeline.py first.")
+    from llm_explain import explanation_available, generate_customer_explanation
+
+    if not explanation_available():
+        raise HTTPException(
+            503, "OPENAI_API_KEY is not set on the server, so AI explanations are disabled.")
+
+    row = {c: req.features.get(c, None) for c in _MODEL.feature_cols}
+    X = pd.DataFrame([row], columns=_MODEL.feature_cols)
+    proba = float(_MODEL.predict_proba(X)[0])
+    thr = req.threshold if req.threshold is not None else _MODEL.threshold
+    pred = int(proba >= thr)
+    prediction = {
+        "predicted_class": "Declined" if pred else "Completed",
+        "predicted_label": pred,
+        "probability_declined": round(proba, 4),
+        "probability_completed": round(1.0 - proba, 4),
+        "threshold_used": round(float(thr), 4),
+    }
+    model_info = {
+        "model_name": _META.get("model_type"), "stage": _META.get("stage"),
+        "model_version": _META.get("model_version"),
+        "imbalance_strategy": _META.get("imbalance_strategy"),
+        "threshold": _META.get("threshold"), "test_metrics": _META.get("test_metrics", {}),
+    }
+    fi = _META.get("feature_importance") or _DASH.get("best_model", {}).get("feature_importance", [])
+    try:
+        text = generate_customer_explanation(prediction, req.features, model_info, fi)
     except Exception as exc:
         raise HTTPException(502, f"LLM explanation failed: {type(exc).__name__}: {exc}")
     return {"prediction": prediction, "explanation": text}

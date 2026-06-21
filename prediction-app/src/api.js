@@ -138,13 +138,14 @@ export async function predict(features, threshold) {
   return await res.json();
 }
 
-// Claims-adjuster explanation of THIS claim's prediction. The backend recomputes
-// the model prediction and the LLM only explains it (it never decides).
+// Explanation of THIS claim's prediction. The backend recomputes the model
+// prediction and the LLM only explains it (it never decides).
+// `audience` selects the endpoint: "adjuster" or "customer".
 // Returns { prediction, explanation }.
-export async function explainPrediction(features, threshold) {
+async function explainFor(endpoint, features, threshold) {
   const body = { features };
   if (threshold != null) body.threshold = threshold;
-  const res = await fetchWithTimeout(`${API_BASE}/explain-prediction`, {
+  const res = await fetchWithTimeout(`${API_BASE}/${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -161,3 +162,9 @@ export async function explainPrediction(features, threshold) {
   }
   return await res.json();
 }
+
+export const explainPrediction = (features, threshold) =>
+  explainFor("explain-prediction", features, threshold);
+
+export const explainPredictionCustomer = (features, threshold) =>
+  explainFor("explain-prediction-customer", features, threshold);

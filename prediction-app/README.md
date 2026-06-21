@@ -11,6 +11,11 @@ The app has a tab menu:
 - **Prediction** — enter claim features, pick a threshold, get the model's prediction.
 - **Model & Features** — live model card, feature-importance bar chart, and an AI explanation of the model.
 - **Claims Adjuster** — an adjuster-focused explanation of the *current* prediction (see below).
+- **Customer** — a plain-language, customer-friendly explanation of the *current* prediction
+  (`POST /explain-prediction-customer`): summarises the preliminary, automated result and the main
+  claim details that influenced it, in simple words with no technical/insurance jargon. The model
+  decides; the LLM only explains, never finalises the decision, and gives no legal/financial/coverage
+  advice.
 
 ## How it works
 - Feature inputs (defaults + categorical options) are bundled in `public/feature_config.json`,

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  explainPrediction, getExplanation, getFeatureImportance, getModelInfo, loadConfig, predict,
+  explainPrediction, explainPredictionCustomer, getExplanation, getFeatureImportance,
+  getModelInfo, loadConfig, predict,
 } from "./api.js";
 
 export default function App() {
@@ -28,7 +29,12 @@ export default function App() {
   const [adjLoading, setAdjLoading] = useState(false);
   const [adjError, setAdjError] = useState(null);
 
-  const [tab, setTab] = useState("predict"); // predict | model | adjuster
+  // Customer-facing explanation of the current prediction.
+  const [custExpl, setCustExpl] = useState(null);
+  const [custLoading, setCustLoading] = useState(false);
+  const [custError, setCustError] = useState(null);
+
+  const [tab, setTab] = useState("predict"); // predict | model | adjuster | customer
 
   // Load bundled feature metadata once (powers the input form).
   useEffect(() => {
@@ -84,8 +90,10 @@ export default function App() {
     setBusy(true);
     setError(null);
     setResult(null);
-    setAdjExpl(null); // new prediction -> clear any prior adjuster explanation
+    setAdjExpl(null); // new prediction -> clear any prior explanations
     setAdjError(null);
+    setCustExpl(null);
+    setCustError(null);
     try {
       setResult(await predict(buildPayload(), Number(thr)));
     } catch (e) {
@@ -108,6 +116,19 @@ export default function App() {
     }
   };
 
+  const explainForCustomer = async () => {
+    setCustLoading(true);
+    setCustError(null);
+    try {
+      const d = await explainPredictionCustomer(buildPayload(), Number(thr));
+      setCustExpl(d.explanation);
+    } catch (e) {
+      setCustError(e.message);
+    } finally {
+      setCustLoading(false);
+    }
+  };
+
   const resetDefaults = () => {
     const init = {};
     for (const [name, meta] of Object.entries(config.feature_meta)) init[name] = meta.default;
@@ -117,6 +138,8 @@ export default function App() {
     setError(null);
     setAdjExpl(null);
     setAdjError(null);
+    setCustExpl(null);
+    setCustError(null);
   };
 
   const generateExplanation = async (refresh = false) => {
@@ -158,6 +181,7 @@ export default function App() {
     ["predict", "Prediction"],
     ["model", "Model & Features"],
     ["adjuster", "Claims Adjuster"],
+    ["customer", "Customer"],
   ];
 
   return (
@@ -179,6 +203,7 @@ export default function App() {
           >
             {label}
             {key === "adjuster" && adjExpl && <span className="dot" />}
+            {key === "customer" && custExpl && <span className="dot" />}
           </button>
         ))}
       </nav>
@@ -357,6 +382,58 @@ export default function App() {
                   <Explanation text={adjExpl} />
                   <button className="ghost" onClick={explainForAdjuster} disabled={adjLoading}>
                     {adjLoading ? "Regenerating…" : "Regenerate"}
+                  </button>
+                </>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      {/* ---------------- Customer tab ---------------- */}
+      {tab === "customer" && (
+        <section className="panel">
+          <h2>
+            Explanation for the Customer <span className="badge ai">gpt-4o-mini</span>
+          </h2>
+          <p className="note" style={{ marginTop: 0 }}>
+            A clear, plain-language message about the current claim's automated review, written for
+            the customer. This is a preliminary, automated result that a person may review — it is
+            not a final decision, and it is not legal, financial, or coverage advice.
+          </p>
+
+          {!result ? (
+            <div className="warn-box">
+              No prediction yet. Enter a claim and click <strong>Predict</strong> on the{" "}
+              <button className="link" onClick={() => setTab("predict")}>
+                Prediction
+              </button>{" "}
+              tab, then return here for a plain-language explanation for the customer.
+            </div>
+          ) : (
+            <>
+              <div className="result-box">
+                <div className="card">
+                  <div className="label">Automated review (preliminary)</div>
+                  <div className="value small">
+                    {result.predicted_label
+                      ? "May not be approved"
+                      : "Likely to be approved"}
+                  </div>
+                </div>
+              </div>
+
+              {!custExpl && (
+                <button className="primary" onClick={explainForCustomer} disabled={custLoading}>
+                  {custLoading ? "Writing…" : "Explain this result for the customer"}
+                </button>
+              )}
+              {custError && <div className="warn-box">{custError}</div>}
+              {custExpl && (
+                <>
+                  <Explanation text={custExpl} />
+                  <button className="ghost" onClick={explainForCustomer} disabled={custLoading}>
+                    {custLoading ? "Rewriting…" : "Regenerate"}
                   </button>
                 </>
               )}
