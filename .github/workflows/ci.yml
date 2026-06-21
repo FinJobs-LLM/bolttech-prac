@@ -11,14 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - name: Build the application Docker image
+        run: docker build -t bolttech-prac:ci .
 
-      - name: Install OpenMP runtime (needed by LightGBM/XGBoost)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgomp1
-
-      - name: Install dependencies (from uv.lock)
-        run: uv sync --frozen
-
-      - name: Run pytest
-        run: uv run --frozen --with pytest pytest -q
+      - name: Run pytest inside the image
+        # Run pytest in the built image so tests use the exact deployed environment
+        # (the image's /app/.venv). The production image doesn't bake in tests/, so
+        # the repo is mounted; pytest is added on the fly. --user root avoids
+        # mount-permission issues; no:cacheprovider avoids writing .pytest_cache.
+        run: >
+          docker run --rm --user root
+          -v "${{ github.workspace }}":/workspace -w /workspace
+          bolttech-prac:ci
+          sh -c "pip install --quiet pytest && python -m pytest -q -p no:cacheprovider"
