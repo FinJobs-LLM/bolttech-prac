@@ -90,11 +90,12 @@ export default function App() {
     setError(null);
   };
 
-  const generateExplanation = async () => {
+  const generateExplanation = async (refresh = false) => {
     setExplLoading(true);
     setExplError(null);
     try {
-      const d = await getExplanation();
+      // refresh=true forces the backend to call gpt-4o-mini again (bypass cache).
+      const d = await getExplanation(refresh);
       setExplanation(d.explanation);
     } catch (e) {
       setExplError(e.message);
@@ -147,7 +148,7 @@ export default function App() {
           LangChain. Click to generate (cached after the first request).
         </p>
         {!explanation && (
-          <button className="primary" onClick={generateExplanation} disabled={explLoading}>
+          <button className="primary" onClick={() => generateExplanation(false)} disabled={explLoading}>
             {explLoading ? "Generating…" : "Generate AI explanation"}
           </button>
         )}
@@ -159,7 +160,7 @@ export default function App() {
                 <p key={i}>{para}</p>
               ))}
             </div>
-            <button className="ghost" onClick={generateExplanation} disabled={explLoading}>
+            <button className="ghost" onClick={() => generateExplanation(true)} disabled={explLoading}>
               {explLoading ? "Regenerating…" : "Regenerate"}
             </button>
           </>

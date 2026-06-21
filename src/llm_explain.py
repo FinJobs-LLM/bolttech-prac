@@ -66,7 +66,7 @@ def _fmt_features(items: list, top_n: int = 12) -> str:
 
 
 def generate_model_explanation(model_info: dict, feature_importance: list,
-                               temperature: float = 0.2) -> str:
+                               temperature: float = 0.6) -> str:
     """Call gpt-4o-mini via LangChain and return the explanation text.
 
     Raises RuntimeError if OPENAI_API_KEY is missing.
