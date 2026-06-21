@@ -62,6 +62,8 @@ bolttech-prac/
 │   └── feature_importance.md         # how feature importance is computed
 ├── pyproject.toml               # project + dependencies (uv)
 ├── uv.lock                      # pinned, reproducible dependency lock
+├── Dockerfile                   # multi-stage build for the serving API
+├── .dockerignore
 └── README.md
 ```
 
@@ -198,6 +200,27 @@ A–F work **without** the backend. Only the **Prediction Demo** page needs the 
 - **Threshold Tuning** — precision/recall/F1 vs threshold, PR curve, confusion matrix at the selection.
 - **Final Model** — selected model, hyperparameters, test metrics, feature importance, rationale.
 - **Prediction Demo** — enter feature values → class + P(Declined)/P(Completed) + threshold used.
+
+## 7. Docker (serving API)
+
+A multi-stage `Dockerfile` builds the serving API: dependencies are installed from `uv.lock`
+(reproducible) into a slim Python 3.12 image, with `libgomp1` for LightGBM and the trained model
+baked in.
+
+```bash
+docker build -t bolttech-prac .
+docker run --rm -p 8000:8000 bolttech-prac      # API + docs at http://localhost:8000/docs
+```
+
+The default command runs `serve_api:app`. Override it to run the dashboard backend or retrain:
+
+```bash
+docker run --rm -p 8000:8000 bolttech-prac uvicorn serve:app --app-dir src --host 0.0.0.0 --port 8000
+docker run --rm bolttech-prac python src/run_pipeline.py
+```
+
+The image includes a `HEALTHCHECK` against `/health`. (The React front-end is a separate app and is
+not part of this image — see `.dockerignore`.)
 
 ---
 
