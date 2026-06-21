@@ -178,6 +178,11 @@ in the `adjuster_explanation` / `customer_explanation` columns (added automatica
 The Claims Adjuster and Customer tabs have a "Save explanation to database" button, and the History
 table shows both columns.
 
+The Claims Adjuster tab also has **Approve → Completed** / **Decline → Declined** buttons that record
+the adjuster's final human decision via **`POST /predictions/{id}/decision`** `{decision}` into the
+`adjuster_decision` column (the model's `predicted_class` is preserved, so an override is visible).
+The History table shows both "Result (model)" and "Adjuster decision".
+
 To load the full preprocessed dataset into its own SQL table (everything in
 `claim_approval_feature_dataset_v2.xlsx` except `other`/`issueDesc` — 2,880 rows × 26 columns):
 

@@ -39,12 +39,22 @@ _PRED_COLS = {
 }
 
 # Free-text columns filled in later (via /predictions/{id}/explanation), one per
-# explanation audience. Added to existing tables by _ensure_explanation_columns.
+# explanation audience.
 _EXPLANATION_COLS = {
     "adjuster": "adjuster_explanation",
     "customer": "customer_explanation",
 }
-_explain_cols_ready = False
+# The claims adjuster's final human decision ('Completed' or 'Declined'), set via
+# /predictions/{id}/decision. Distinct from the model's predicted_class.
+_DECISION_COL = "adjuster_decision"
+
+# Columns added to an already-existing table by _ensure_extra_columns (name -> type).
+_EXTRA_COLS = {
+    "adjuster_explanation": "TEXT",
+    "customer_explanation": "TEXT",
+    _DECISION_COL: "VARCHAR(16)",
+}
+_extra_cols_ready = False
 
 
 def db_enabled() -> bool:
@@ -99,8 +109,8 @@ def ensure_table(model) -> None:
         cols.append(f"`{name}` {typ} NULL")
     for name, typ in _PRED_COLS.items():
         cols.append(f"`{name}` {typ} NULL")
-    for col in _EXPLANATION_COLS.values():
-        cols.append(f"`{col}` TEXT NULL")
+    for col, typ in _EXTRA_COLS.items():
+        cols.append(f"`{col}` {typ} NULL")
     ddl = (
         f"CREATE TABLE IF NOT EXISTS `{TABLE}` (\n"
         "  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,\n"
@@ -110,17 +120,18 @@ def ensure_table(model) -> None:
     )
     with engine.begin() as conn:
         conn.execute(text(ddl))
-    _ensure_explanation_columns(engine)  # add cols to pre-existing tables
+    _ensure_extra_columns(engine)  # add later-added cols to pre-existing tables
     _table_ready = True
 
 
-def _ensure_explanation_columns(engine) -> None:
-    """Add the explanation TEXT columns to an existing table if missing.
+def _ensure_extra_columns(engine) -> None:
+    """Add the later-added columns (explanations, adjuster decision) to an
+    existing table if missing.
 
     MySQL has no ``ADD COLUMN IF NOT EXISTS``, so we check information_schema.
     Idempotent; runs at most once per process."""
-    global _explain_cols_ready
-    if _explain_cols_ready:
+    global _extra_cols_ready
+    if _extra_cols_ready:
         return
     with engine.begin() as conn:
         existing = {
@@ -130,10 +141,10 @@ def _ensure_explanation_columns(engine) -> None:
                 {"t": TABLE},
             )
         }
-        for col in _EXPLANATION_COLS.values():
+        for col, typ in _EXTRA_COLS.items():
             if col not in existing:
-                conn.execute(text(f"ALTER TABLE `{TABLE}` ADD COLUMN `{col}` TEXT NULL"))
-    _explain_cols_ready = True
+                conn.execute(text(f"ALTER TABLE `{TABLE}` ADD COLUMN `{col}` {typ} NULL"))
+    _extra_cols_ready = True
 
 
 def save_prediction(model, feature_row: dict, prediction: dict):
@@ -175,7 +186,7 @@ def save_explanation(prediction_id: int, kind: str, explanation: str) -> dict:
         return {"ok": False, "reason": "db_disabled"}
     col = _EXPLANATION_COLS[kind]
     try:
-        _ensure_explanation_columns(engine)
+        _ensure_extra_columns(engine)
         with engine.begin() as conn:
             res = conn.execute(
                 text(f"UPDATE `{TABLE}` SET `{col}` = :e WHERE `id` = :id"),
@@ -184,6 +195,27 @@ def save_explanation(prediction_id: int, kind: str, explanation: str) -> dict:
         return {"ok": res.rowcount > 0, "reason": None if res.rowcount > 0 else "not_found"}
     except Exception as exc:
         log.warning("save_explanation failed: %s: %s", type(exc).__name__, exc)
+        return {"ok": False, "reason": f"error: {exc}"}
+
+
+def save_decision(prediction_id: int, decision: str) -> dict:
+    """Save the claims adjuster's final decision ('Completed' or 'Declined') onto
+    an existing prediction row. Returns {"ok": bool, "reason": ...}."""
+    if decision not in ("Completed", "Declined"):
+        return {"ok": False, "reason": "bad_decision"}
+    engine = _get_engine()
+    if engine is None:
+        return {"ok": False, "reason": "db_disabled"}
+    try:
+        _ensure_extra_columns(engine)
+        with engine.begin() as conn:
+            res = conn.execute(
+                text(f"UPDATE `{TABLE}` SET `{_DECISION_COL}` = :d WHERE `id` = :id"),
+                {"d": decision, "id": int(prediction_id)},
+            )
+        return {"ok": res.rowcount > 0, "reason": None if res.rowcount > 0 else "not_found"}
+    except Exception as exc:
+        log.warning("save_decision failed: %s: %s", type(exc).__name__, exc)
         return {"ok": False, "reason": f"error: {exc}"}
 
 

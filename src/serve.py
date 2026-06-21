@@ -71,7 +71,8 @@ def index():
         "endpoints": ["/predict", "/model-summary", "/model-comparison",
                       "/threshold-analysis", "/feature-importance", "/explain",
                       "/explain-prediction", "/explain-prediction-customer",
-                      "/predictions/recent", "/predictions/{id}/explanation", "/dashboard"],
+                      "/predictions/recent", "/predictions/{id}/explanation",
+                      "/predictions/{id}/decision", "/dashboard"],
     }
 
 
@@ -138,6 +139,29 @@ def save_prediction_explanation(prediction_id: int, req: ExplanationSaveRequest)
             raise HTTPException(404, f"No saved prediction with id {prediction_id}.")
         raise HTTPException(502, f"Could not save explanation ({res['reason']}).")
     return {"saved": True, "prediction_id": prediction_id, "kind": req.kind}
+
+
+class DecisionSaveRequest(BaseModel):
+    decision: str = Field(..., description="'Completed' (approve) or 'Declined' (decline)")
+
+
+@app.post("/predictions/{prediction_id}/decision")
+def save_prediction_decision(prediction_id: int, req: DecisionSaveRequest):
+    """Record the claims adjuster's final decision on a saved prediction row.
+
+    The model's predicted_class is preserved; this stores the human decision in
+    the adjuster_decision column."""
+    import db
+    if not db.db_enabled():
+        raise HTTPException(503, "Database is not configured on the server.")
+    if req.decision not in ("Completed", "Declined"):
+        raise HTTPException(422, "decision must be 'Completed' or 'Declined'.")
+    res = db.save_decision(prediction_id, req.decision)
+    if not res["ok"]:
+        if res["reason"] == "not_found":
+            raise HTTPException(404, f"No saved prediction with id {prediction_id}.")
+        raise HTTPException(502, f"Could not save decision ({res['reason']}).")
+    return {"saved": True, "prediction_id": prediction_id, "decision": req.decision}
 
 
 @app.get("/model-summary")

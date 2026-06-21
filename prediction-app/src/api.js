@@ -190,6 +190,27 @@ export async function savePredictionExplanation(predictionId, kind, explanation)
   return await res.json();
 }
 
+// Save the claims adjuster's final decision ("Completed" or "Declined") onto a
+// saved prediction row. Returns { saved, prediction_id, decision }.
+export async function savePredictionDecision(predictionId, decision) {
+  const res = await fetchWithTimeout(`${API_BASE}/predictions/${predictionId}/decision`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ decision }),
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const j = await res.json();
+      msg = j.detail || j.error?.message || msg;
+    } catch (_) {
+      /* keep status */
+    }
+    throw new Error(msg);
+  }
+  return await res.json();
+}
+
 // Recent saved predictions from the database (newest first).
 // Returns { enabled, count, predictions: [...] }.
 export async function getRecentPredictions(limit = 25) {

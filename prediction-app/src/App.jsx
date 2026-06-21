@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   explainPrediction, explainPredictionCustomer, getExplanation, getFeatureImportance,
-  getModelInfo, getRecentPredictions, loadConfig, predict, savePredictionExplanation,
+  getModelInfo, getRecentPredictions, loadConfig, predict, savePredictionDecision,
+  savePredictionExplanation,
 } from "./api.js";
 
 export default function App() {
@@ -29,6 +30,8 @@ export default function App() {
   const [adjLoading, setAdjLoading] = useState(false);
   const [adjError, setAdjError] = useState(null);
   const [adjSave, setAdjSave] = useState(null); // {saving, saved, error}
+  // Claims adjuster's final decision on the current prediction.
+  const [decision, setDecision] = useState(null); // {saving, value, error}
 
   // Customer-facing explanation of the current prediction.
   const [custExpl, setCustExpl] = useState(null);
@@ -105,6 +108,7 @@ export default function App() {
     setAdjExpl(null); // new prediction -> clear any prior explanations
     setAdjError(null);
     setAdjSave(null);
+    setDecision(null);
     setCustExpl(null);
     setCustError(null);
     setCustSave(null);
@@ -156,6 +160,17 @@ export default function App() {
     }
   };
 
+  const saveDecision = async (value) => {
+    if (!result?.prediction_id) return;
+    setDecision({ saving: true, value });
+    try {
+      await savePredictionDecision(result.prediction_id, value);
+      setDecision({ value });
+    } catch (e) {
+      setDecision({ error: e.message });
+    }
+  };
+
   const explainForCustomer = async () => {
     setCustLoading(true);
     setCustError(null);
@@ -180,6 +195,7 @@ export default function App() {
     setAdjExpl(null);
     setAdjError(null);
     setAdjSave(null);
+    setDecision(null);
     setCustExpl(null);
     setCustError(null);
     setCustSave(null);
@@ -415,6 +431,41 @@ export default function App() {
                 </div>
               </div>
 
+              <div className="decision">
+                <h3>Final decision (claims adjuster)</h3>
+                <p className="note" style={{ marginTop: 0 }}>
+                  Confirm the outcome for this claim. Your decision is saved to the History table
+                  (it does not change the model's output above).
+                </p>
+                {!result.prediction_id ? (
+                  <p className="note">
+                    This prediction wasn't saved to the database, so a decision can't be recorded.
+                  </p>
+                ) : (
+                  <>
+                    <div className="decision-buttons">
+                      <button
+                        className={"decision-btn approve" + (decision?.value === "Completed" ? " active" : "")}
+                        onClick={() => saveDecision("Completed")}
+                        disabled={decision?.saving}>
+                        Approve → Completed
+                      </button>
+                      <button
+                        className={"decision-btn decline" + (decision?.value === "Declined" ? " active" : "")}
+                        onClick={() => saveDecision("Declined")}
+                        disabled={decision?.saving}>
+                        Decline → Declined
+                      </button>
+                    </div>
+                    {decision?.saving && <p className="note">Saving decision…</p>}
+                    {decision?.value && !decision?.saving && (
+                      <p className="saved-ok">✓ Decision saved: {decision.value}</p>
+                    )}
+                    {decision?.error && <div className="warn-box">{decision.error}</div>}
+                  </>
+                )}
+              </div>
+
               {!adjExpl && (
                 <button className="primary" onClick={explainForAdjuster} disabled={adjLoading}>
                   {adjLoading ? "Generating…" : "Explain this result for a claims adjuster"}
@@ -521,7 +572,8 @@ export default function App() {
                   <tr>
                     <th>#</th>
                     <th>Saved at</th>
-                    <th>Result</th>
+                    <th>Result (model)</th>
+                    <th>Adjuster decision</th>
                     <th>P(Declined)</th>
                     <th>Threshold</th>
                     {features.map((f) => (
@@ -544,6 +596,16 @@ export default function App() {
                         }}>
                           {r.predicted_class}
                         </span>
+                      </td>
+                      <td>
+                        {r.adjuster_decision ? (
+                          <span className="badge" style={{
+                            background: r.adjuster_decision === "Declined" ? "#ef4444" : "#22c55e",
+                            color: r.adjuster_decision === "Declined" ? "white" : "#06281a",
+                          }}>
+                            {r.adjuster_decision}
+                          </span>
+                        ) : "—"}
                       </td>
                       <td>{r.probability_declined != null
                         ? (r.probability_declined * 100).toFixed(1) + "%" : "—"}</td>
