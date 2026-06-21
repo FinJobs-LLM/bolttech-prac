@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from model_factory import ClaimModel
+from ml.model_factory import ClaimModel
 
 
 def raw_importances(model: ClaimModel) -> dict[str, float]:

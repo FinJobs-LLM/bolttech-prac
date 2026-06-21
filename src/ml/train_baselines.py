@@ -6,7 +6,7 @@ project brief, so the optimized models have a fair reference point to beat.
 from __future__ import annotations
 
 from config import IMBALANCE_WEIGHT
-from model_factory import DEFAULT_IMBALANCE, fit_model
+from ml.model_factory import DEFAULT_IMBALANCE, fit_model
 
 BASELINE_PARAMS = {
     "RandomForest": {"n_estimators": 300, "max_depth": 12, "min_samples_leaf": 2},

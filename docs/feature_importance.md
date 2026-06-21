@@ -11,7 +11,7 @@ This is about **features** (e.g. `rrp`, `retailerName`) — distinct from
 
 Two steps:
 
-1. **`src/model_factory.py` → `ClaimModel.feature_importance()`** — pulls the raw importance from the
+1. **`src/ml/model_factory.py` → `ClaimModel.feature_importance()`** — pulls the raw importance from the
    fitted estimator, aligned with the feature names the estimator actually saw.
 2. **`src/ml/explainability.py` → `grouped_importances()`** — rolls one-hot dummy columns back up to
    their original feature, sorts descending, drops zeros.

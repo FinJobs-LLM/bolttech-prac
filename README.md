@@ -42,8 +42,9 @@ bolttech-prac/
 │   └── dashboard_data.json      # single bundle consumed by API + front-end (generated)
 ├── src/                         # Python backend (modules run with `--app-dir src`)
 │   ├── config.py                # paths, constants, seed, positive-class convention, .env loader
-│   ├── model_factory.py         # build/fit 4 families + ClaimModel (class of the saved model artifact)
-│   ├── ml/                      # offline training/evaluation library (used by run_pipeline.py)
+│   ├── ml/                      # offline ML library: training, optimization, evaluation
+│   │   ├── model_factory.py     # build/fit 4 families + ClaimModel (class of the saved model artifact)
+│   │   ├── run_pipeline.py      # ORCHESTRATOR — trains/optimizes, writes all artifacts
 │   │   ├── data.py              # load, validate, encode target, stratified split
 │   │   ├── preprocessing.py     # tree pipeline (impute+onehot) / CatBoost native cats
 │   │   ├── train_baselines.py   # baseline configs per family
@@ -52,10 +53,11 @@ bolttech-prac/
 │   │   ├── threshold_tuning.py  # 0.05–0.95 sweep, pick best F1(Declined)
 │   │   ├── explainability.py    # feature-importance grouping
 │   │   └── mlflow_tracking.py   # MLflow helpers
-│   ├── run_pipeline.py          # ORCHESTRATOR — trains/optimizes, writes all artifacts
+│   ├── model_factory.py         # back-compat shim → ml.model_factory (keeps best_model.joblib unpickling)
+│   ├── run_pipeline.py          # back-compat entry point → ml.run_pipeline (keeps `python src/run_pipeline.py`)
 │   ├── load_dataset_to_db.py    # load the dataset into a SQL table
-│   ├── dashboard_api.py                 # FastAPI dashboard backend (uvicorn dashboard_api:app)
-│   ├── prediction_service_api.py             # FastAPI production serving API (uvicorn prediction_service_api:app)
+│   ├── dashboard_api.py         # FastAPI dashboard backend (uvicorn dashboard_api:app)
+│   ├── prediction_service_api.py # FastAPI production serving API (uvicorn prediction_service_api:app)
 │   ├── db.py                    # RDS/MySQL persistence
 │   ├── llm_explain.py           # LangChain + gpt-4o-mini explanations
 │   └── prompts/                 # LLM prompt templates (per audience)

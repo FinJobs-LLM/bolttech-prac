@@ -16,7 +16,7 @@ import optuna
 from sklearn.metrics import average_precision_score
 
 from config import IMBALANCE_WEIGHT, RANDOM_STATE
-from model_factory import fit_model
+from ml.model_factory import fit_model
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 warnings.filterwarnings("ignore")
