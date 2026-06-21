@@ -11,11 +11,16 @@ from __future__ import annotations
 
 import os
 
-from prompts.adjuster import ADJUSTER_HUMAN_TEMPLATE, ADJUSTER_SYSTEM_PROMPT
-from prompts.customer import CUSTOMER_HUMAN_TEMPLATE, CUSTOMER_SYSTEM_PROMPT
-from prompts.model_explanation import HUMAN_TEMPLATE, SYSTEM_PROMPT
+# Model name, prompts and generation params are version-controlled in
+# prompts/llm_config.yaml (loaded by the `prompts` package).
+import prompts
+from prompts import (
+    ADJUSTER_HUMAN_TEMPLATE, ADJUSTER_SYSTEM_PROMPT,
+    CUSTOMER_HUMAN_TEMPLATE, CUSTOMER_SYSTEM_PROMPT,
+    HUMAN_TEMPLATE, SYSTEM_PROMPT,
+)
 
-MODEL_NAME = "gpt-4o-mini"
+MODEL_NAME = prompts.MODEL  # from prompts/llm_config.yaml
 
 
 def _importance_metric(model_name: str) -> str:
@@ -60,7 +65,7 @@ def _fmt_features(items: list, top_n: int = 15) -> str:
 
 
 def generate_model_explanation(model_info: dict, feature_importance: list,
-                               temperature: float = 0.6) -> str:
+                               temperature: float | None = None) -> str:
     """Call gpt-4o-mini via LangChain and return the explanation text.
 
     Raises RuntimeError if OPENAI_API_KEY is missing.
@@ -72,7 +77,10 @@ def generate_model_explanation(model_info: dict, feature_importance: list,
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_openai import ChatOpenAI
 
-    llm = ChatOpenAI(model=MODEL_NAME, temperature=temperature, max_tokens=750, timeout=60)
+    gen = prompts.get_generation("model_explanation")
+    temp = gen["temperature"] if temperature is None else temperature
+    llm = ChatOpenAI(model=MODEL_NAME, temperature=temp, max_tokens=gen["max_tokens"],
+                     timeout=prompts.TIMEOUT)
     prompt = ChatPromptTemplate.from_messages(
         [("system", SYSTEM_PROMPT), ("human", HUMAN_TEMPLATE)]
     )
@@ -108,7 +116,7 @@ def _fmt_drivers(feature_importance: list, claim_features: dict, top_n: int = 12
 
 def generate_prediction_explanation(prediction: dict, claim_features: dict,
                                     model_info: dict, feature_importance: list,
-                                    temperature: float = 0.4) -> str:
+                                    temperature: float | None = None) -> str:
     """Adjuster-facing explanation of a SINGLE model prediction.
 
     The model has already made the prediction; this only explains it. Raises
@@ -120,7 +128,10 @@ def generate_prediction_explanation(prediction: dict, claim_features: dict,
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_openai import ChatOpenAI
 
-    llm = ChatOpenAI(model=MODEL_NAME, temperature=temperature, max_tokens=750, timeout=60)
+    gen = prompts.get_generation("prediction_adjuster")
+    temp = gen["temperature"] if temperature is None else temperature
+    llm = ChatOpenAI(model=MODEL_NAME, temperature=temp, max_tokens=gen["max_tokens"],
+                     timeout=prompts.TIMEOUT)
     prompt = ChatPromptTemplate.from_messages(
         [("system", ADJUSTER_SYSTEM_PROMPT), ("human", ADJUSTER_HUMAN_TEMPLATE)]
     )
@@ -167,7 +178,7 @@ def _fmt_customer_drivers(feature_importance: list, claim_features: dict, top_n:
 
 def generate_customer_explanation(prediction: dict, claim_features: dict,
                                   model_info: dict, feature_importance: list,
-                                  temperature: float = 0.5) -> str:
+                                  temperature: float | None = None) -> str:
     """Customer-facing, plain-language explanation of a SINGLE model prediction.
 
     The model has already made the prediction; this only explains it in simple
@@ -179,7 +190,10 @@ def generate_customer_explanation(prediction: dict, claim_features: dict,
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_openai import ChatOpenAI
 
-    llm = ChatOpenAI(model=MODEL_NAME, temperature=temperature, max_tokens=600, timeout=60)
+    gen = prompts.get_generation("prediction_customer")
+    temp = gen["temperature"] if temperature is None else temperature
+    llm = ChatOpenAI(model=MODEL_NAME, temperature=temp, max_tokens=gen["max_tokens"],
+                     timeout=prompts.TIMEOUT)
     prompt = ChatPromptTemplate.from_messages(
         [("system", CUSTOMER_SYSTEM_PROMPT), ("human", CUSTOMER_HUMAN_TEMPLATE)]
     )

@@ -27,7 +27,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from config import BEST_MODEL_META, BEST_MODEL_PATH, DASHBOARD_JSON
+import prompts  # LLM model + prompt config (version-controlled)
+from config import APP_VERSION, BEST_MODEL_META, BEST_MODEL_PATH, DASHBOARD_JSON
 from model_factory import ClaimModel  # noqa: F401  (needed for joblib unpickling)
 
 app = FastAPI(title="Claim Approval Model API", version="1.0.0")
@@ -66,6 +67,8 @@ def index():
     _load()
     return {
         "service": "Claim Approval Model API",
+        "app_version": APP_VERSION,
+        "llm": {"model": prompts.MODEL, "config_version": prompts.VERSION},
         "model_loaded": _MODEL is not None,
         "best_model": _META.get("model_type"),
         "endpoints": ["/predict", "/model-summary", "/model-comparison",

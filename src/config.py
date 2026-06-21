@@ -60,6 +60,10 @@ MLFLOW_EXPERIMENT = "claim_approval_optimization"
 
 ALL_MODELS = ["RandomForest", "XGBoost", "LightGBM", "CatBoost"]
 
+# Deployed release identifier — set to the git tag by cd.yml at image build time
+# (ARG/ENV APP_VERSION). Lets a running service report which release it is.
+APP_VERSION = os.environ.get("APP_VERSION", "dev")
+
 
 def ensure_dirs() -> None:
     for d in (MODELS_DIR, REPORTS_DIR, FIGURES_DIR, MLRUNS_DIR):

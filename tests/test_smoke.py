@@ -46,3 +46,13 @@ def test_fastapi_apps_construct():
     import prediction_service_api
     assert dashboard_api.app is not None
     assert prediction_service_api.app is not None
+
+
+def test_llm_config_versioned():
+    # Model name + prompts come from the version-controlled YAML, not hardcoded.
+    import prompts
+    import llm_explain
+    assert prompts.MODEL and prompts.VERSION
+    g = prompts.get_generation("model_explanation")
+    assert "temperature" in g and "max_tokens" in g
+    assert llm_explain.MODEL_NAME == prompts.MODEL

@@ -62,7 +62,7 @@ bolttech-prac/
 │   ├── prediction_service_api.py # FastAPI production serving API (uvicorn prediction_service_api:app)
 │   ├── db.py                    # RDS/MySQL persistence
 │   ├── llm_explain.py           # LangChain + gpt-4o-mini explanations
-│   └── prompts/                 # LLM prompt templates (per audience)
+│   └── prompts/                 # llm_config.yaml: LLM model + prompts + gen params (versioned)
 ├── model-dashboard/             # Front-end app #1: model-optimization dashboard (Vite + React, 7 pages)
 ├── prediction-app/              # Front-end app #2: claim prediction & review (Vite + React, 5 tabs)
 ├── notebooks/model_experiment_summary.ipynb
@@ -162,6 +162,13 @@ OPENAI_API_KEY=sk-... uv run uvicorn dashboard_api:app --app-dir src --port 8000
 ```
 
 Without the key, `/explain` returns `503` with a clear message (other endpoints are unaffected).
+
+**LLM configuration & versioning.** The OpenAI model name, prompts, and generation params live in one
+version-controlled file, `src/prompts/llm_config.yaml` (`version`, `model`, `generation`, `prompts`).
+Edit prompts there. The deployed release is recorded separately as `APP_VERSION` (the git tag, stamped
+into the image by `cd.yml`), and both are reported at runtime via `GET /` (dashboard_api) and
+`GET /metadata` (prediction_service_api) — e.g. `{"app_version": "v1.2.3", "llm": {"model":
+"gpt-4o-mini", "config_version": "1.0.0"}}` — so you can track which model/prompts a release served.
 
 ### Saving predictions to AWS RDS (MySQL)
 

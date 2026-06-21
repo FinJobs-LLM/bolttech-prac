@@ -27,6 +27,10 @@ jobs:
         with:
           context: .
           push: true
+          # Stamp the git tag into the image so the running service can report it
+          # (config.APP_VERSION); pair it with the version-controlled llm_config.yaml.
+          build-args: |
+            APP_VERSION=${{ github.ref_name }}
           tags: |
             ${{ secrets.DOCKER_ACCOUNT }}/bolttech-prac:${{ github.ref_name }}
             ${{ secrets.DOCKER_ACCOUNT }}/bolttech-prac:latest

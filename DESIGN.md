@@ -53,7 +53,7 @@ bolttech-prac/
 │   ├── prediction_service_api.py               # FastAPI production API (uvicorn …:app, :8001)
 │   ├── db.py                                   # AWS RDS (MySQL) persistence (SQLAlchemy + PyMySQL)
 │   ├── llm_explain.py                          # LangChain + gpt-4o-mini explanations
-│   ├── prompts/                                # prompt templates per audience (model/adjuster/customer)
+│   ├── prompts/                                # llm_config.yaml (model+prompts+params) + loader (__init__.py)
 │   ├── load_dataset_to_db.py                   # load the dataset into a SQL table
 │   ├── eda_report.py                           # standalone: generate the EDA markdown report
 │   └── fill_unknown.py                         # standalone one-off: fill missing categoricals
@@ -132,7 +132,7 @@ flowchart TB
 | **App backend** | `src/dashboard_api.py` (`:8000`) | UI-facing API: predictions, model/dashboard data, prediction history, LLM explanations, adjuster decisions; persists to RDS. Consumed by both front-ends. |
 | **Production API** | `src/prediction_service_api.py` (`:8001`) | Ops-grade inference: `/health`, `/ready`, `/metadata`, `/predict`, `/predict-batch`, `/metrics`; Pydantic schemas, validation, structured errors, latency/error metrics. |
 | **Persistence** | `src/db.py` | SQLAlchemy + PyMySQL access to RDS; auto-creates/migrates the `claim_predictions` table; best-effort saves. |
-| **LLM explanations** | `src/llm_explain.py`, `src/prompts/` | LangChain `ChatOpenAI(gpt-4o-mini)` turning model/prediction/feature data into prose for three audiences. |
+| **LLM explanations** | `src/llm_explain.py`, `src/prompts/` | LangChain `ChatOpenAI` turning model/prediction/feature data into prose for three audiences. The model name, prompts, and generation params are version-controlled in `src/prompts/llm_config.yaml` (loaded by the `prompts` package); `llm_explain` reads them rather than hardcoding. |
 | **Front-ends** | `model-dashboard/`, `prediction-app/` | Analytics dashboard (7 pages) and operational prediction/review app (5 tabs). |
 | **Utilities** | `src/load_dataset_to_db.py`, `src/eda_report.py`, `src/fill_unknown.py` | Load dataset → SQL table; generate EDA report; one-off categorical fill. |
 
@@ -239,6 +239,8 @@ A separate `claim_dataset_v2` table is produced by `load_dataset_to_db.py`.
   - `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` — RDS MySQL; if unset, persistence is
     silently skipped and `/predict` still works.
   - `N_TRIALS` — Optuna trials per family.
+  - `APP_VERSION` — deployed release id (default `dev`); set to the git tag by `cd.yml` at image build
+    so the running service can report it. Distinct from the LLM config `version` in `llm_config.yaml`.
   - `MLFLOW_ALLOW_FILE_STORE=true` — set automatically by `mlflow_tracking` for the local file store.
   - `VITE_API_BASE` (front-end build) and `API_TARGET` (prediction-app dev proxy target).
 - **Ports:** `8000` dashboard_api · `8001` prediction_service_api · `5173` model-dashboard ·
@@ -282,8 +284,12 @@ Integrations:
 - **Top-level shared contract vs. library.** `config.py` + `model_factory.py` are the shared
   contract between the offline `ml/` library and the online serving layer; everything else is grouped
   by concern.
-- **Prompt templates as data.** `src/prompts/` isolates LLM prompts (model / adjuster / customer) from
-  generation logic for easy review/versioning.
+- **Prompt + model config as versioned data.** `src/prompts/llm_config.yaml` is the single source of
+  truth for the LLM model name, the three audiences' prompts, and generation params (temperature /
+  max_tokens), carrying its own `version`. The `prompts` package loads it; `llm_explain` reads model +
+  prompts + params from it (nothing hardcoded). The deployed release is recorded separately as
+  `APP_VERSION` (the git tag, stamped into the image by `cd.yml`), and both are exposed at runtime
+  (`GET /`, `GET /metadata`) so you can trace which model/prompts a given release served.
 - **Best-effort side effects.** DB persistence never breaks `/predict`; the response reports
   `saved_to_db`. Missing `OPENAI_API_KEY`/DB degrade gracefully (clear `503`/notices).
 - **Model decides, LLM explains.** Strict separation enforced in prompts and endpoints; the adjuster's
@@ -330,8 +336,11 @@ updated source always produces fresh layers (no stale-content risk).
 - **Add a model family** — extend `ALL_MODELS` (config), add a builder + fit branch in
   `ml/model_factory.py`, a baseline in `ml/train_baselines.py`, and a search space in
   `ml/optimize_optuna.suggest_params`.
-- **Add an explanation audience** — add a prompt module under `src/prompts/`, a `generate_*` function
-  in `llm_explain.py`, and an endpoint in `dashboard_api.py` (and/or `prediction_service_api.py`).
+- **Add an explanation audience** — add a prompt + generation entry under a new key in
+  `src/prompts/llm_config.yaml`, a `generate_*` function in `llm_explain.py`, and an endpoint in
+  `dashboard_api.py` (and/or `prediction_service_api.py`).
+- **Change the LLM model or prompts** — edit `src/prompts/llm_config.yaml` and bump its `version`; no
+  code change needed.
 - **Add/clarify API endpoints** — both FastAPI apps are plain route modules; add routes and (for the
   production API) Pydantic schemas.
 - **Evolve the DB schema** — add columns via the `information_schema` migration pattern in `db.py`

@@ -38,7 +38,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
-from config import BEST_MODEL_META, BEST_MODEL_PATH
+import prompts  # LLM model + prompt config (version-controlled)
+from config import APP_VERSION, BEST_MODEL_META, BEST_MODEL_PATH
 from model_factory import ClaimModel  # noqa: F401  (needed for joblib unpickling)
 
 SERVICE_NAME = "claim-approval-serving-api"
@@ -304,6 +305,8 @@ def metadata():
                       "Model is not loaded.", details=STATE.load_error)
     m = STATE.meta
     return {
+        "app_version": APP_VERSION,
+        "llm": {"model": prompts.MODEL, "config_version": prompts.VERSION},
         "model_name": m.get("model_type"),
         "model_version": m.get("model_version"),
         "training_date": m.get("trained_at"),

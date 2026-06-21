@@ -52,9 +52,13 @@ COPY models/ ./models/
 COPY reports/ ./reports/
 COPY data/ ./data/
 
+# Release identifier (the git tag); cd.yml passes --build-arg APP_VERSION=<tag>.
+ARG APP_VERSION=dev
+
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    APP_VERSION=${APP_VERSION}
 
 # Run as a non-root user.
 RUN useradd --create-home --uid 1000 appuser \
