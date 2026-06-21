@@ -18,6 +18,12 @@ catboost_info/
 model-dashboard/
 prediction-app/
 
+# Secrets — never include in the build context (the image reads these from the
+# runtime environment; the Dockerfile never COPYs them, this is defense-in-depth)
+.env
+.env.*
+!.env.example
+
 # Git / CI / editor
 .git/
 .gitignore

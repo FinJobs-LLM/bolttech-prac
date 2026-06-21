@@ -112,8 +112,8 @@ cd prediction-app  && npm install   # app #2: claim prediction & review
 ## 2. Train + optimize everything
 
 ```bash
-python src/run_pipeline.py            # default 30 Optuna trials per model
-N_TRIALS=60 python src/run_pipeline.py   # more trials = better search (slower)
+python src/run_pipeline.py            # default 50 Optuna trials per model (config.N_TRIALS)
+N_TRIALS=10 python src/run_pipeline.py   # fewer trials = quick smoke run
 ```
 
 This single command: loads & validates data → trains 4 baselines → runs Optuna for each family →
@@ -149,7 +149,10 @@ uvicorn dashboard_api:app --app-dir src --reload --port 8000
 ```
 
 Endpoints: `POST /predict`, `GET /model-summary`, `GET /model-comparison`,
-`GET /threshold-analysis`, `GET /feature-importance`, `GET /explain`, `GET /dashboard`.
+`GET /threshold-analysis`, `GET /feature-importance`, `GET /explain`, `GET /dashboard`, plus
+per-prediction LLM explanations (`POST /explain-prediction`, `POST /explain-prediction-customer`)
+and persistence (`GET /predictions/recent`, `POST /predictions/{id}/explanation`,
+`POST /predictions/{id}/decision`) — documented below.
 
 `GET /explain` returns an LLM-generated (LangChain + `gpt-4o-mini`) plain-English explanation of the
 model and its feature importance. It requires an OpenAI key in the server environment:
@@ -290,8 +293,8 @@ docker run --rm -p 8000:8000 bolttech-prac uvicorn dashboard_api:app --app-dir s
 docker run --rm bolttech-prac python src/run_pipeline.py
 ```
 
-The image includes a `HEALTHCHECK` against `/health`. (The React front-end is a separate app and is
-not part of this image — see `.dockerignore`.)
+The image includes a `HEALTHCHECK` against `/health`. (The two React front-end apps are separate and
+not part of this image — both are excluded via `.dockerignore`.)
 
 ---
 

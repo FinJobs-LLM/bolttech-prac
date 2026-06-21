@@ -1,23 +1,31 @@
 # Claim Approval — Standalone Prediction App
 
-A small, **independent** front-end that does one thing: let a user enter a claim's feature values and
-see the model's prediction (predicted class, P(Declined), P(Completed), threshold used).
+A focused, **independent** front-end for **claim prediction and review**: score a claim, then review
+the result with adjuster/customer explanations, record an adjuster decision, and browse history — all
+backed by the FastAPI service.
 
-This is a separate project from `../model-dashboard/` (the full dashboard) and does not depend on it. It
-replicates only the "Prediction Demo" functionality.
+This is a separate project from `../model-dashboard/` (the analytics dashboard) and does not depend on
+it. The model always makes the prediction; the LLM only *explains* it.
 
 ## Tabs
-The app has a tab menu:
-- **Prediction** — enter claim features, pick a threshold, get the model's prediction.
-- **Model & Features** — live model card, feature-importance bar chart, and an AI explanation of the model.
-- **Claims Adjuster** — an adjuster-focused explanation of the *current* prediction (see below).
-- **History** — the most recent predictions saved to the database (`GET /predictions/recent`); shows
-  a notice if DB saving isn't configured on the server.
+The app has a tab menu (in this order):
+- **Prediction** — enter claim features, pick a threshold, get the model's prediction. When the
+  database is configured, each prediction is saved (response includes `prediction_id`, `saved_to_db`).
+- **Model & Features** — live model card and feature-importance bar chart, plus an AI explanation of
+  the model (`GET /explain`).
+- **Claims Adjuster** — an adjuster-focused LLM explanation of the *current* prediction
+  (`POST /explain-prediction`), a **Save explanation to database** button
+  (`POST /predictions/{id}/explanation`), and **Approve → Completed / Decline → Declined** buttons that
+  record the adjuster's final decision (`POST /predictions/{id}/decision`). The model's prediction is
+  preserved; the decision is stored separately.
 - **Customer** — a plain-language, customer-friendly explanation of the *current* prediction
   (`POST /explain-prediction-customer`): summarises the preliminary, automated result and the main
   claim details that influenced it, in simple words with no technical/insurance jargon. The model
   decides; the LLM only explains, never finalises the decision, and gives no legal/financial/coverage
   advice.
+- **History** — recent predictions saved to the database (`GET /predictions/recent`): all input
+  features, the model result, the adjuster decision, and any saved explanations. Shows a notice if DB
+  saving isn't configured on the server.
 
 ## How it works
 - Feature inputs (defaults + categorical options) are bundled in `public/feature_config.json`,
