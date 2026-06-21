@@ -71,6 +71,12 @@ def _get_engine():
     return _engine
 
 
+def get_engine():
+    """Public accessor for the configured SQLAlchemy engine (or None if the DB
+    is not configured). Used by scripts such as load_dataset_to_db.py."""
+    return _get_engine()
+
+
 def _feature_columns(model) -> dict[str, str]:
     """name -> MySQL type for each model feature (numeric DOUBLE, else VARCHAR)."""
     num = set(model.num_cols)

@@ -178,6 +178,14 @@ in the `adjuster_explanation` / `customer_explanation` columns (added automatica
 The Claims Adjuster and Customer tabs have a "Save explanation to database" button, and the History
 table shows both columns.
 
+To load the full preprocessed dataset into its own SQL table (everything in
+`claim_approval_feature_dataset_v2.xlsx` except `other`/`issueDesc` — 2,880 rows × 26 columns):
+
+```bash
+python src/load_dataset_to_db.py            # table: claim_dataset_v2 (re-run replaces it)
+python src/load_dataset_to_db.py --table my_name
+```
+
 ```bash
 curl -X POST localhost:8000/predict -H 'Content-Type: application/json' \
   -d '{"features": {"rrp": 1799, "excessFee": 139, "coverage": "ADLD",
