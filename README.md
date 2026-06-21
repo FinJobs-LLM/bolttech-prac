@@ -56,6 +56,8 @@ bolttech-prac/
 │   ├── model_factory.py         # back-compat shim → ml.model_factory (keeps best_model.joblib unpickling)
 │   ├── run_pipeline.py          # back-compat entry point → ml.run_pipeline (keeps `python src/run_pipeline.py`)
 │   ├── load_dataset_to_db.py    # load the dataset into a SQL table
+│   ├── eda_report.py            # standalone: generate the EDA markdown report
+│   ├── fill_unknown.py          # standalone one-off: fill missing categoricals with "Unknown"
 │   ├── dashboard_api.py         # FastAPI dashboard backend (uvicorn dashboard_api:app)
 │   ├── prediction_service_api.py # FastAPI production serving API (uvicorn prediction_service_api:app)
 │   ├── db.py                    # RDS/MySQL persistence
