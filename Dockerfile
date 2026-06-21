@@ -32,7 +32,21 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
 
 # ---------------------------------------------------------------------------
-# Stage 2 — runtime: slim image with the venv + application code
+# Stage 2 — test: the dependency venv + pytest + source + tests (CI only).
+# Built with `docker build --target test`; NOT part of the production image
+# (it is not in the runtime stage's dependency graph). uv installs pytest into
+# the same /app/.venv that holds the locked deps.
+# ---------------------------------------------------------------------------
+FROM builder AS test
+WORKDIR /app
+RUN --mount=type=cache,target=/root/.cache/uv uv pip install pytest
+COPY src/ ./src/
+COPY tests/ ./tests/
+ENV PATH="/app/.venv/bin:$PATH"
+CMD ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"]
+
+# ---------------------------------------------------------------------------
+# Stage 3 — runtime: slim image with the venv + application code
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim-bookworm AS runtime
 

@@ -11,16 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build the application Docker image
-        run: docker build -t bolttech-prac:ci .
+      - name: Build the test image (Docker `test` stage)
+        # The `test` stage is built from the same Dockerfile as the production
+        # image: it reuses the locked-dependency venv and adds pytest + tests.
+        run: docker build --target test -t bolttech-prac:test .
 
       - name: Run pytest inside the image
-        # Run pytest in the built image so tests use the exact deployed environment
-        # (the image's /app/.venv). The production image doesn't bake in tests/, so
-        # the repo is mounted; pytest is added on the fly. --user root avoids
-        # mount-permission issues; no:cacheprovider avoids writing .pytest_cache.
-        run: >
-          docker run --rm --user root
-          -v "${{ github.workspace }}":/workspace -w /workspace
-          bolttech-prac:ci
-          sh -c "pip install --quiet pytest && python -m pytest -q -p no:cacheprovider"
+        run: docker run --rm bolttech-prac:test
