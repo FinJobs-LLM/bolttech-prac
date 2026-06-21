@@ -13,6 +13,9 @@ replicates only the "Prediction Demo" functionality.
   (name/stage, version + training date when available, imbalance strategy, decision threshold, and
   held-out test metrics). It tries `GET /metadata` (serve_api.py — richest) and falls back to
   `GET /model-summary` (serve.py). The live decision threshold is used as the form default.
+- It also shows the serving model's **feature importance** as a bar chart (rendered with plain CSS —
+  no chart library), fetched live from `GET /metadata` (serve_api.py) or `GET /feature-importance`
+  (serve.py).
 - Inference calls the FastAPI backend via the Vite dev proxy at `/api/predict`.
 
 If the API is unreachable, the model card shows a notice and the form still works using the bundled

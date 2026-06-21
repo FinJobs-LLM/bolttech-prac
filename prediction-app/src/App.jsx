@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getModelInfo, loadConfig, predict } from "./api.js";
+import { getFeatureImportance, getModelInfo, loadConfig, predict } from "./api.js";
 
 export default function App() {
   const [config, setConfig] = useState(null);
@@ -7,6 +7,9 @@ export default function App() {
 
   const [modelInfo, setModelInfo] = useState(null);
   const [modelInfoError, setModelInfoError] = useState(null);
+
+  const [importance, setImportance] = useState(null);
+  const [importanceError, setImportanceError] = useState(null);
 
   const [values, setValues] = useState({});
   const [thr, setThr] = useState(0.5);
@@ -36,6 +39,13 @@ export default function App() {
         if (info.threshold != null) setThr(info.threshold);
       })
       .catch((e) => setModelInfoError(e.message));
+  }, []);
+
+  // Fetch the serving model's feature importance (for display). Non-fatal.
+  useEffect(() => {
+    getFeatureImportance()
+      .then(setImportance)
+      .catch((e) => setImportanceError(e.message));
   }, []);
 
   const features = useMemo(
@@ -106,6 +116,8 @@ export default function App() {
       </header>
 
       <ModelInfo info={modelInfo} error={modelInfoError} fallback={config} />
+
+      <FeatureImportance data={importance} error={importanceError} />
 
       <section className="panel">
         <div className="form-grid">
@@ -279,6 +291,59 @@ function ModelInfo({ info, error, fallback }) {
         </div>
       </div>
       <p className="note">Test-set metrics (held out). Positive class = Declined.</p>
+    </section>
+  );
+}
+
+const TOP_N = 15;
+
+// Live feature-importance bar chart (CSS bars — no chart library needed).
+function FeatureImportance({ data, error }) {
+  if (error && !data) {
+    return (
+      <section className="panel">
+        <h2>Feature importance</h2>
+        <p className="note">Live feature importance unavailable ({error}).</p>
+      </section>
+    );
+  }
+  if (!data) {
+    return (
+      <section className="panel">
+        <h2>Feature importance</h2>
+        <p className="note">Loading feature importance from the API…</p>
+      </section>
+    );
+  }
+
+  const items = [...(data.items || [])]
+    .sort((a, b) => b.importance - a.importance)
+    .slice(0, TOP_N);
+  const max = items.length ? items[0].importance : 1;
+
+  return (
+    <section className="panel">
+      <h2>
+        Feature importance <span className="badge live">live</span>
+      </h2>
+      <p className="note" style={{ marginTop: 0 }}>
+        How much the serving model ({data.model}) relies on each feature
+        {data.items.length > TOP_N ? ` — top ${TOP_N} of ${data.items.length}` : ""}.
+      </p>
+      <div className="fi-list">
+        {items.map((it) => (
+          <div className="fi-row" key={it.feature}>
+            <div className="fi-name" title={it.feature}>{it.feature}</div>
+            <div className="fi-track">
+              <div
+                className="fi-bar"
+                style={{ width: `${Math.max(2, (it.importance / max) * 100)}%` }}
+              />
+            </div>
+            <div className="fi-score">{Number(it.importance).toFixed(2)}</div>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

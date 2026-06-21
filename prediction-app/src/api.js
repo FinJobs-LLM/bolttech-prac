@@ -57,6 +57,28 @@ export async function getModelInfo() {
   };
 }
 
+// Fetch the serving model's feature importance.
+//   - serve_api.py exposes it inside GET /metadata
+//   - serve.py     exposes a dedicated GET /feature-importance
+// Returns { model, items: [{feature, importance}] } (items sorted desc).
+export async function getFeatureImportance() {
+  try {
+    const res = await fetch(`${API_BASE}/metadata`);
+    if (res.ok) {
+      const d = await res.json();
+      if (Array.isArray(d.feature_importance) && d.feature_importance.length) {
+        return { model: d.model_name, items: d.feature_importance };
+      }
+    }
+  } catch (_) {
+    /* fall through */
+  }
+  const res = await fetch(`${API_BASE}/feature-importance`);
+  if (!res.ok) throw new Error(`Could not load feature importance (${res.status})`);
+  const d = await res.json();
+  return { model: d.model, items: d.feature_importance || [] };
+}
+
 export async function predict(features, threshold) {
   const body = { features };
   if (threshold != null) body.threshold = threshold;
