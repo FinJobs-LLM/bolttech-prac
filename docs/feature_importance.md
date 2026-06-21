@@ -17,7 +17,7 @@ Two steps:
    their original feature, sorts descending, drops zeros.
 
 The grouped result is stored in `dashboard_data.json` at `best_model.feature_importance` (top 25),
-plotted by `evaluate.plot_feature_importance`, and shown in `frontend/src/pages/FinalModel.jsx`.
+plotted by `evaluate.plot_feature_importance`, and shown in `model-dashboard/src/pages/FinalModel.jsx`.
 
 ## The raw importance — method depends on the model family
 

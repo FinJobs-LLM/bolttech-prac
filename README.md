@@ -53,7 +53,8 @@ bolttech-prac/
 │   ├── mlflow_tracking.py       # MLflow helpers
 │   ├── run_pipeline.py          # ORCHESTRATOR — runs everything, writes all artifacts
 │   └── serve.py                 # FastAPI service
-├── frontend/                    # Vite + React dashboard (7 pages)
+├── model-dashboard/             # Front-end app #1: model-optimization dashboard (Vite + React, 7 pages)
+├── prediction-app/              # Front-end app #2: claim prediction & review (Vite + React, 5 tabs)
 ├── notebooks/model_experiment_summary.ipynb
 ├── docs/
 │   ├── mlflow.md                # role of MLflow (experiment tracking)
@@ -91,10 +92,11 @@ uv sync                 # creates .venv and installs the locked dependencies
 Then either activate the env (`source .venv/bin/activate`) or prefix commands with `uv run`
 (e.g. `uv run python src/run_pipeline.py`, `uv run uvicorn serve_api:app --app-dir src --port 8001`).
 
-Front-end (Node 18+):
+Front-end (Node 18+) — there are two independent apps; install whichever you'll run:
 
 ```bash
-cd frontend && npm install
+cd model-dashboard && npm install   # app #1: model-optimization dashboard
+cd prediction-app  && npm install   # app #2: claim prediction & review
 ```
 
 ## 2. Train + optimize everything
@@ -231,10 +233,17 @@ Validation returns `422` with a structured `{"error": {...}}` body for unknown f
 wrong numeric types, out-of-range thresholds, or empty batches. If the model artifact is missing,
 `/ready`, `/metadata`, `/predict*` return `503` (run `python src/run_pipeline.py` first).
 
-## 6. Start the React front-end
+## 6. Start the front-end apps
+
+This repo has **two independent front-end apps** (each with its own `README.md`):
+
+| App | Folder | Purpose | Dev port |
+|---|---|---|---|
+| **Model-optimization dashboard** | [`model-dashboard/`](model-dashboard/) | Visualize/compare the model optimization & selection (analytics audience). | 5173 |
+| **Claim prediction & review** | [`prediction-app/`](prediction-app/) | Score a claim, get adjuster/customer explanations, record the adjuster decision, view history. | 5174 |
 
 ```bash
-cd frontend
+cd model-dashboard
 npm run dev          # http://localhost:5173  (proxies /api -> :8000 for the demo)
 # or a static build:
 npm run build && npm run preview
@@ -242,9 +251,9 @@ npm run build && npm run preview
 
 The dashboard loads `public/dashboard_data.json` (copied automatically by the pipeline), so pages
 A–F work **without** the backend. Only the **Prediction Demo** page needs the FastAPI server running
-(it calls `/api/predict`, proxied to `:8000`).
+(it calls `/api/predict`, proxied to `:8000`). For the second app see [`prediction-app/README.md`](prediction-app/README.md).
 
-### Dashboard pages
+### Dashboard pages (model-dashboard)
 - **Overview** — dataset size, class distribution (bar + donut), imbalance ratio, split sizes.
 - **Model Leaderboard** — sortable table of all 8 models; best row highlighted; Accuracy de-emphasized.
 - **MLflow / Optuna** — per-family search history, running-best curve, parameter importance, best trial.
@@ -293,7 +302,7 @@ not part of this image — see `.dockerignore`.)
 - The MLflow **file store** is enabled via `MLFLOW_ALLOW_FILE_STORE=true` (set automatically). For
   the MLflow **model registry** you would point MLflow at a database backend (e.g.
   `sqlite:///mlflow.db`); the best model is also saved directly to `models/best_model.joblib`.
-- `mlruns/`, `frontend/node_modules/` and `frontend/dist/` are git-ignored (regenerate them).
+- `mlruns/`, `model-dashboard/node_modules/`, `prediction-app/node_modules/` and the apps' `dist/` are git-ignored (regenerate them).
 ```text
 Best Model: CatBoost (optimized)   ·   Strategy: class_weights {Completed:1, Declined:5.36}
 Best Threshold: 0.44   ·   Selected on highest validation PR-AUC

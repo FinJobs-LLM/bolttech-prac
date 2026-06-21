@@ -8,7 +8,8 @@ This project predicts insurance device-claim approval (`status`: Declined=1 posi
 It now contains a full ML system — see `README.md` for the authoritative guide:
 - `src/` — training pipeline (`run_pipeline.py` orchestrates), Optuna optimization, MLflow tracking,
   threshold tuning, evaluation, explainability, and a FastAPI service (`serve.py`).
-- `frontend/` — Vite + React explainability dashboard.
+- `model-dashboard/` — Vite + React model-optimization explainability dashboard (front-end app #1).
+- `prediction-app/` — Vite + React claim prediction & review app (front-end app #2).
 - `reports/`, `models/`, `mlruns/` — generated artifacts (run `python src/run_pipeline.py`).
 - `pyproject.toml` + `uv.lock` — Python deps managed with `uv` (`uv sync`); LightGBM needs `libgomp1` (`apt-get install -y libgomp1`).
 

@@ -3,7 +3,7 @@
 A small, **independent** front-end that does one thing: let a user enter a claim's feature values and
 see the model's prediction (predicted class, P(Declined), P(Completed), threshold used).
 
-This is a separate project from `../frontend/` (the full dashboard) and does not depend on it. It
+This is a separate project from `../model-dashboard/` (the full dashboard) and does not depend on it. It
 replicates only the "Prediction Demo" functionality.
 
 ## Tabs

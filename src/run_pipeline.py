@@ -396,8 +396,8 @@ def main():
     }
     DASHBOARD_JSON.write_text(json.dumps(dashboard, indent=2, default=float))
 
-    # Copy dashboard JSON into the front-end public dir if it exists.
-    fe_public = Path(__file__).resolve().parents[1] / "frontend" / "public"
+    # Copy dashboard JSON into the model-dashboard front-end public dir if it exists.
+    fe_public = Path(__file__).resolve().parents[1] / "model-dashboard" / "public"
     if fe_public.exists():
         (fe_public / "dashboard_data.json").write_text(json.dumps(dashboard, default=float))
 

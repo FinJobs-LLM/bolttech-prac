@@ -1,7 +1,7 @@
 // Data access layer.
 //
 // Dashboard data is loaded from the static bundle written by the training
-// pipeline (frontend/public/dashboard_data.json). The prediction demo calls the
+// pipeline (model-dashboard/public/dashboard_data.json). The prediction demo calls the
 // FastAPI backend through the Vite dev proxy at /api, falling back to a direct
 // localhost:8000 call when not proxied.
 

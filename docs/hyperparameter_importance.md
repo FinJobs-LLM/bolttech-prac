@@ -17,7 +17,7 @@ importances = {k: float(v) for k, v in
 ```
 
 The result is stored in `dashboard_data.json` at `optuna.<Model>.param_importances` and rendered by
-`frontend/src/pages/Tracking.jsx`. The call is wrapped in `try/except` → `{}` when importances can't
+`model-dashboard/src/pages/Tracking.jsx`. The call is wrapped in `try/except` → `{}` when importances can't
 be computed (e.g. too few completed trials, or no variation in a parameter).
 
 ## The method: fANOVA

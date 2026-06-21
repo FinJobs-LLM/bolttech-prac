@@ -28,7 +28,7 @@ export default function App() {
             {error}. Run the training pipeline first:
             <pre>python src/run_pipeline.py</pre>
             It writes <code>reports/dashboard_data.json</code> and copies it to{" "}
-            <code>frontend/public/</code>.
+            <code>model-dashboard/public/</code>.
           </div>
         </div>
       </div>

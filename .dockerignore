@@ -14,8 +14,9 @@ mlruns/
 mlflow.db
 catboost_info/
 
-# Front-end (separate app; not part of the serving image)
-frontend/
+# Front-end apps (separate apps; not part of the serving image)
+model-dashboard/
+prediction-app/
 
 # Git / CI / editor
 .git/
