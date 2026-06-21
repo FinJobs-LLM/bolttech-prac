@@ -71,7 +71,7 @@ def index():
         "endpoints": ["/predict", "/model-summary", "/model-comparison",
                       "/threshold-analysis", "/feature-importance", "/explain",
                       "/explain-prediction", "/explain-prediction-customer",
-                      "/predictions/recent", "/dashboard"],
+                      "/predictions/recent", "/predictions/{id}/explanation", "/dashboard"],
     }
 
 
@@ -100,9 +100,10 @@ def predict(req: PredictRequest):
     }
     # Best-effort: persist the features + prediction to RDS (never breaks /predict).
     import db
-    saved = db.save_prediction(
+    pid = db.save_prediction(
         _MODEL, row, {**result, "model_version": _META.get("model_version")})
-    result["saved_to_db"] = saved
+    result["saved_to_db"] = pid is not None
+    result["prediction_id"] = pid
     return result
 
 
@@ -116,6 +117,27 @@ def predictions_recent(limit: int = 20):
     if rows is None:
         return {"enabled": False, "count": 0, "predictions": []}
     return {"enabled": True, "count": len(rows), "predictions": rows}
+
+
+class ExplanationSaveRequest(BaseModel):
+    kind: str = Field(..., description="'adjuster' or 'customer'")
+    explanation: str = Field(..., description="The LLM explanation text to store")
+
+
+@app.post("/predictions/{prediction_id}/explanation")
+def save_prediction_explanation(prediction_id: int, req: ExplanationSaveRequest):
+    """Attach an LLM explanation (adjuster or customer) to a saved prediction row."""
+    import db
+    if not db.db_enabled():
+        raise HTTPException(503, "Database is not configured on the server.")
+    if req.kind not in ("adjuster", "customer"):
+        raise HTTPException(422, "kind must be 'adjuster' or 'customer'.")
+    res = db.save_explanation(prediction_id, req.kind, req.explanation)
+    if not res["ok"]:
+        if res["reason"] == "not_found":
+            raise HTTPException(404, f"No saved prediction with id {prediction_id}.")
+        raise HTTPException(502, f"Could not save explanation ({res['reason']}).")
+    return {"saved": True, "prediction_id": prediction_id, "kind": req.kind}
 
 
 @app.get("/model-summary")

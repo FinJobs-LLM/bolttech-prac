@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   explainPrediction, explainPredictionCustomer, getExplanation, getFeatureImportance,
-  getModelInfo, getRecentPredictions, loadConfig, predict,
+  getModelInfo, getRecentPredictions, loadConfig, predict, savePredictionExplanation,
 } from "./api.js";
 
 export default function App() {
@@ -28,11 +28,13 @@ export default function App() {
   const [adjExpl, setAdjExpl] = useState(null);
   const [adjLoading, setAdjLoading] = useState(false);
   const [adjError, setAdjError] = useState(null);
+  const [adjSave, setAdjSave] = useState(null); // {saving, saved, error}
 
   // Customer-facing explanation of the current prediction.
   const [custExpl, setCustExpl] = useState(null);
   const [custLoading, setCustLoading] = useState(false);
   const [custError, setCustError] = useState(null);
+  const [custSave, setCustSave] = useState(null);
 
   // Saved-prediction history (from the database).
   const [history, setHistory] = useState(null); // {enabled, count, predictions}
@@ -102,8 +104,10 @@ export default function App() {
     setResult(null);
     setAdjExpl(null); // new prediction -> clear any prior explanations
     setAdjError(null);
+    setAdjSave(null);
     setCustExpl(null);
     setCustError(null);
+    setCustSave(null);
     try {
       setResult(await predict(buildPayload(), Number(thr)));
     } catch (e) {
@@ -116,6 +120,7 @@ export default function App() {
   const explainForAdjuster = async () => {
     setAdjLoading(true);
     setAdjError(null);
+    setAdjSave(null); // regenerated text -> previous "saved" state is stale
     try {
       const d = await explainPrediction(buildPayload(), Number(thr));
       setAdjExpl(d.explanation);
@@ -123,6 +128,19 @@ export default function App() {
       setAdjError(e.message);
     } finally {
       setAdjLoading(false);
+    }
+  };
+
+  const saveExplanation = async (kind) => {
+    const text = kind === "adjuster" ? adjExpl : custExpl;
+    const setSave = kind === "adjuster" ? setAdjSave : setCustSave;
+    if (!result?.prediction_id || !text) return;
+    setSave({ saving: true });
+    try {
+      await savePredictionExplanation(result.prediction_id, kind, text);
+      setSave({ saved: true });
+    } catch (e) {
+      setSave({ error: e.message });
     }
   };
 
@@ -141,6 +159,7 @@ export default function App() {
   const explainForCustomer = async () => {
     setCustLoading(true);
     setCustError(null);
+    setCustSave(null);
     try {
       const d = await explainPredictionCustomer(buildPayload(), Number(thr));
       setCustExpl(d.explanation);
@@ -160,8 +179,10 @@ export default function App() {
     setError(null);
     setAdjExpl(null);
     setAdjError(null);
+    setAdjSave(null);
     setCustExpl(null);
     setCustError(null);
+    setCustSave(null);
   };
 
   const generateExplanation = async (refresh = false) => {
@@ -406,6 +427,8 @@ export default function App() {
                   <button className="ghost" onClick={explainForAdjuster} disabled={adjLoading}>
                     {adjLoading ? "Regenerating…" : "Regenerate"}
                   </button>
+                  <SaveToDb save={adjSave} canSave={!!result.prediction_id}
+                    onSave={() => saveExplanation("adjuster")} />
                 </>
               )}
             </>
@@ -458,6 +481,8 @@ export default function App() {
                   <button className="ghost" onClick={explainForCustomer} disabled={custLoading}>
                     {custLoading ? "Rewriting…" : "Regenerate"}
                   </button>
+                  <SaveToDb save={custSave} canSave={!!result.prediction_id}
+                    onSave={() => saveExplanation("customer")} />
                 </>
               )}
             </>
@@ -503,6 +528,8 @@ export default function App() {
                       <th key={f}>{f}</th>
                     ))}
                     <th>Model</th>
+                    <th>Adjuster explanation</th>
+                    <th>Customer explanation</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -525,6 +552,12 @@ export default function App() {
                         <td key={f}>{r[f] ?? "—"}</td>
                       ))}
                       <td className="note">{r.model_version ?? "—"}</td>
+                      <td className="expl-cell" title={r.adjuster_explanation || ""}>
+                        {r.adjuster_explanation || "—"}
+                      </td>
+                      <td className="expl-cell" title={r.customer_explanation || ""}>
+                        {r.customer_explanation || "—"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -539,6 +572,30 @@ export default function App() {
 
 const pct = (v) => (v == null ? "—" : (v * 100).toFixed(1) + "%");
 const num = (v) => (v == null ? "—" : Number(v).toFixed(3));
+
+// "Save explanation to the database" control, used on the adjuster & customer tabs.
+function SaveToDb({ save, canSave, onSave }) {
+  if (!canSave) {
+    return (
+      <p className="note" style={{ marginTop: 10 }}>
+        This prediction wasn't saved to the database, so the explanation can't be attached
+        (run a prediction with the database configured).
+      </p>
+    );
+  }
+  return (
+    <div style={{ marginTop: 10 }}>
+      {save?.saved ? (
+        <span className="saved-ok">✓ Saved to database (shows in the History tab)</span>
+      ) : (
+        <button className="ghost" onClick={onSave} disabled={save?.saving}>
+          {save?.saving ? "Saving…" : "Save explanation to database"}
+        </button>
+      )}
+      {save?.error && <div className="warn-box">{save.error}</div>}
+    </div>
+  );
+}
 
 // Inline **bold** -> <strong>.
 function inline(text, keyPrefix) {

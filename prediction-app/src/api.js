@@ -169,6 +169,27 @@ export const explainPrediction = (features, threshold) =>
 export const explainPredictionCustomer = (features, threshold) =>
   explainFor("explain-prediction-customer", features, threshold);
 
+// Attach an LLM explanation (kind = "adjuster" | "customer") to a saved
+// prediction row. Returns { saved, prediction_id, kind }.
+export async function savePredictionExplanation(predictionId, kind, explanation) {
+  const res = await fetchWithTimeout(`${API_BASE}/predictions/${predictionId}/explanation`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind, explanation }),
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const j = await res.json();
+      msg = j.detail || j.error?.message || msg;
+    } catch (_) {
+      /* keep status */
+    }
+    throw new Error(msg);
+  }
+  return await res.json();
+}
+
 // Recent saved predictions from the database (newest first).
 // Returns { enabled, count, predictions: [...] }.
 export async function getRecentPredictions(limit = 25) {

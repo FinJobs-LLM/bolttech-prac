@@ -172,6 +172,12 @@ Saving is **best-effort**: if the DB is unset or unreachable, `/predict` still r
 View saved rows via **`GET /predictions/recent?limit=25`** (newest first; `enabled:false` when the DB
 isn't configured), or the **History** tab in the prediction-app.
 
+LLM explanations can be attached to a saved row: `/predict` returns the `prediction_id`, and
+**`POST /predictions/{id}/explanation`** `{kind: "adjuster"|"customer", explanation}` stores the text
+in the `adjuster_explanation` / `customer_explanation` columns (added automatically to the table).
+The Claims Adjuster and Customer tabs have a "Save explanation to database" button, and the History
+table shows both columns.
+
 ```bash
 curl -X POST localhost:8000/predict -H 'Content-Type: application/json' \
   -d '{"features": {"rrp": 1799, "excessFee": 139, "coverage": "ADLD",

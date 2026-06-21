@@ -46,6 +46,11 @@ table.history { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.history th, table.history td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
 table.history th { color: var(--muted); font-weight: 600; }
 table.history tbody tr:hover { background: var(--panel-2); }
+table.history td.expl-cell {
+  max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--muted);
+}
+.saved-ok { color: #22c55e; font-size: 13px; font-weight: 600; }
 
 button.link {
   background: none; border: none; color: var(--primary); cursor: pointer;

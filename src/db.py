@@ -38,6 +38,14 @@ _PRED_COLS = {
     "model_version": "VARCHAR(128)",
 }
 
+# Free-text columns filled in later (via /predictions/{id}/explanation), one per
+# explanation audience. Added to existing tables by _ensure_explanation_columns.
+_EXPLANATION_COLS = {
+    "adjuster": "adjuster_explanation",
+    "customer": "customer_explanation",
+}
+_explain_cols_ready = False
+
 
 def db_enabled() -> bool:
     """True if the minimum DB connection settings are present."""
@@ -85,6 +93,8 @@ def ensure_table(model) -> None:
         cols.append(f"`{name}` {typ} NULL")
     for name, typ in _PRED_COLS.items():
         cols.append(f"`{name}` {typ} NULL")
+    for col in _EXPLANATION_COLS.values():
+        cols.append(f"`{col}` TEXT NULL")
     ddl = (
         f"CREATE TABLE IF NOT EXISTS `{TABLE}` (\n"
         "  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,\n"
@@ -94,16 +104,39 @@ def ensure_table(model) -> None:
     )
     with engine.begin() as conn:
         conn.execute(text(ddl))
+    _ensure_explanation_columns(engine)  # add cols to pre-existing tables
     _table_ready = True
 
 
-def save_prediction(model, feature_row: dict, prediction: dict) -> bool:
-    """Insert one prediction row. Best-effort: returns True on success, False on
-    any failure (the error is logged, never raised)."""
+def _ensure_explanation_columns(engine) -> None:
+    """Add the explanation TEXT columns to an existing table if missing.
+
+    MySQL has no ``ADD COLUMN IF NOT EXISTS``, so we check information_schema.
+    Idempotent; runs at most once per process."""
+    global _explain_cols_ready
+    if _explain_cols_ready:
+        return
+    with engine.begin() as conn:
+        existing = {
+            r[0] for r in conn.execute(
+                text("SELECT COLUMN_NAME FROM information_schema.COLUMNS "
+                     "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t"),
+                {"t": TABLE},
+            )
+        }
+        for col in _EXPLANATION_COLS.values():
+            if col not in existing:
+                conn.execute(text(f"ALTER TABLE `{TABLE}` ADD COLUMN `{col}` TEXT NULL"))
+    _explain_cols_ready = True
+
+
+def save_prediction(model, feature_row: dict, prediction: dict):
+    """Insert one prediction row. Best-effort: returns the new row's id on
+    success, or None on any failure (the error is logged, never raised)."""
     try:
         engine = _get_engine()
         if engine is None:
-            return False
+            return None
         ensure_table(model)
 
         feat_cols = list(model.feature_cols)
@@ -116,11 +149,36 @@ def save_prediction(model, feature_row: dict, prediction: dict) -> bool:
         val_sql = ", ".join(f":{c}" for c in all_cols)
         insert = text(f"INSERT INTO `{TABLE}` ({col_sql}) VALUES ({val_sql})")
         with engine.begin() as conn:
-            conn.execute(insert, params)
-        return True
+            result = conn.execute(insert, params)
+            return int(result.lastrowid)
     except Exception as exc:  # best-effort: never break prediction serving
         log.warning("Failed to save prediction to DB: %s: %s", type(exc).__name__, exc)
-        return False
+        return None
+
+
+def save_explanation(prediction_id: int, kind: str, explanation: str) -> dict:
+    """Save an LLM explanation onto an existing prediction row.
+
+    `kind` is 'adjuster' or 'customer'. Returns a dict:
+    {"ok": bool, "reason": None | 'db_disabled' | 'bad_kind' | 'not_found' | 'error: ...'}.
+    """
+    if kind not in _EXPLANATION_COLS:
+        return {"ok": False, "reason": "bad_kind"}
+    engine = _get_engine()
+    if engine is None:
+        return {"ok": False, "reason": "db_disabled"}
+    col = _EXPLANATION_COLS[kind]
+    try:
+        _ensure_explanation_columns(engine)
+        with engine.begin() as conn:
+            res = conn.execute(
+                text(f"UPDATE `{TABLE}` SET `{col}` = :e WHERE `id` = :id"),
+                {"e": explanation, "id": int(prediction_id)},
+            )
+        return {"ok": res.rowcount > 0, "reason": None if res.rowcount > 0 else "not_found"}
+    except Exception as exc:
+        log.warning("save_explanation failed: %s: %s", type(exc).__name__, exc)
+        return {"ok": False, "reason": f"error: {exc}"}
 
 
 def recent_predictions(limit: int = 20):
