@@ -20,6 +20,12 @@ replicates only the "Prediction Demo" functionality.
   summary of the model + its feature importance server-side using LangChain + `gpt-4o-mini`. This
   requires the backend to have `OPENAI_API_KEY` set; without it the panel shows a clear notice and the
   rest of the app still works.
+- After a prediction, a **Claims-adjuster explanation** (button) calls `POST /explain-prediction`,
+  which generates an adjuster-facing explanation of *this* prediction (LangChain + `gpt-4o-mini`),
+  combining the prediction result, model reliability metrics, feature importance, and the claim's
+  values. The model makes the decision; the LLM only explains it for manual review and never
+  approves/declines the claim. The backend recomputes the prediction so the explanation always
+  matches the real model output.
 - Inference calls the FastAPI backend via the Vite dev proxy at `/api/predict`.
 
 If the API is unreachable, the model card shows a notice and the form still works using the bundled

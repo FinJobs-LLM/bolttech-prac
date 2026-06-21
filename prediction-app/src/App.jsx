@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  getExplanation, getFeatureImportance, getModelInfo, loadConfig, predict,
+  explainPrediction, getExplanation, getFeatureImportance, getModelInfo, loadConfig, predict,
 } from "./api.js";
 
 export default function App() {
@@ -22,6 +22,11 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  // Adjuster-facing explanation of the current prediction.
+  const [adjExpl, setAdjExpl] = useState(null);
+  const [adjLoading, setAdjLoading] = useState(false);
+  const [adjError, setAdjError] = useState(null);
 
   // Load bundled feature metadata once (powers the input form).
   useEffect(() => {
@@ -61,10 +66,8 @@ export default function App() {
 
   const setVal = (f, v) => setValues((s) => ({ ...s, [f]: v }));
 
-  const run = async () => {
-    setBusy(true);
-    setError(null);
-    setResult(null);
+  // Coerce form values into the payload sent to the API (numbers stay numbers).
+  const buildPayload = () => {
     const fm = config.feature_meta;
     const payload = {};
     for (const f of features) {
@@ -72,12 +75,34 @@ export default function App() {
       payload[f] =
         meta.type === "numeric" && values[f] !== "" ? Number(values[f]) : values[f];
     }
+    return payload;
+  };
+
+  const run = async () => {
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    setAdjExpl(null); // new prediction -> clear any prior adjuster explanation
+    setAdjError(null);
     try {
-      setResult(await predict(payload, Number(thr)));
+      setResult(await predict(buildPayload(), Number(thr)));
     } catch (e) {
       setError(e.message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const explainForAdjuster = async () => {
+    setAdjLoading(true);
+    setAdjError(null);
+    try {
+      const d = await explainPrediction(buildPayload(), Number(thr));
+      setAdjExpl(d.explanation);
+    } catch (e) {
+      setAdjError(e.message);
+    } finally {
+      setAdjLoading(false);
     }
   };
 
@@ -88,6 +113,8 @@ export default function App() {
     setThr(modelInfo?.threshold ?? config.default_threshold);
     setResult(null);
     setError(null);
+    setAdjExpl(null);
+    setAdjError(null);
   };
 
   const generateExplanation = async (refresh = false) => {
@@ -243,6 +270,30 @@ export default function App() {
             </div>
           </div>
           {result.explanation && <p className="explain">{result.explanation}</p>}
+
+          <div className="adjuster">
+            <h3>
+              Claims-adjuster explanation <span className="badge ai">gpt-4o-mini</span>
+            </h3>
+            <p className="note" style={{ marginTop: 0 }}>
+              A professional explanation of this prediction for manual review. The model made the
+              decision; this only explains it — it does not approve or decline the claim.
+            </p>
+            {!adjExpl && (
+              <button className="primary" onClick={explainForAdjuster} disabled={adjLoading}>
+                {adjLoading ? "Generating…" : "Explain for claims adjuster"}
+              </button>
+            )}
+            {adjError && <div className="warn-box">{adjError}</div>}
+            {adjExpl && (
+              <>
+                <Explanation text={adjExpl} />
+                <button className="ghost" onClick={explainForAdjuster} disabled={adjLoading}>
+                  {adjLoading ? "Regenerating…" : "Regenerate"}
+                </button>
+              </>
+            )}
+          </div>
         </section>
       )}
     </div>

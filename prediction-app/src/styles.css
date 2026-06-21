@@ -117,3 +117,7 @@ code { background: #0b1220; border-radius: 6px; padding: 1px 5px; }
 .explanation ul { margin: 0 0 10px; padding-left: 20px; }
 .explanation li { margin: 0 0 5px; }
 .explanation strong { color: #fff; }
+
+/* Adjuster explanation sub-section inside the result panel */
+.adjuster { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 16px; }
+.adjuster h3 { font-size: 15px; margin: 0 0 6px; display: flex; align-items: center; gap: 10px; }

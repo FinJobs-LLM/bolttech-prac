@@ -326,6 +326,41 @@ def metadata():
 _EXPLANATION: dict = {}  # cache so the LLM is called at most once per process
 
 
+@app.post("/explain-prediction", tags=["model"])
+def explain_prediction(req: PredictRequest):
+    """Claims-adjuster-facing LLM explanation of THIS claim's model prediction.
+
+    The model makes the prediction (recomputed here); the LLM only explains it to
+    support manual review — it never decides."""
+    if not STATE.ready:
+        return _error(status.HTTP_503_SERVICE_UNAVAILABLE, "not_ready",
+                      "Model is not loaded.", details=STATE.load_error)
+    from llm_explain import explanation_available, generate_prediction_explanation
+
+    if not explanation_available():
+        return _error(status.HTTP_503_SERVICE_UNAVAILABLE, "llm_disabled",
+                      "OPENAI_API_KEY is not set on the server, so AI explanations are disabled.")
+    errs = validate_features(req.features)
+    if errs:
+        return _error(status.HTTP_422_UNPROCESSABLE_ENTITY, "invalid_features",
+                      "Input feature validation failed.", details=errs)
+    preds, _, _ = _score_frame([req.features], req.threshold)
+    prediction = preds[0]
+    m = STATE.meta
+    model_info = {
+        "model_name": m.get("model_type"), "stage": m.get("stage"),
+        "model_version": m.get("model_version"), "imbalance_strategy": m.get("imbalance_strategy"),
+        "threshold": m.get("threshold"), "test_metrics": m.get("test_metrics", {}),
+    }
+    try:
+        text = generate_prediction_explanation(prediction, req.features, model_info,
+                                               m.get("feature_importance", []))
+    except Exception as exc:
+        return _error(status.HTTP_502_BAD_GATEWAY, "llm_error",
+                      "LLM explanation failed.", details=f"{type(exc).__name__}: {exc}")
+    return {"prediction": prediction, "explanation": text}
+
+
 @app.get("/explain", tags=["model"])
 def explain(refresh: bool = False):
     """LLM-generated (gpt-4o-mini via LangChain) plain-English explanation of the

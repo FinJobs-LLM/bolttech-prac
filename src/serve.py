@@ -69,7 +69,8 @@ def index():
         "model_loaded": _MODEL is not None,
         "best_model": _META.get("model_type"),
         "endpoints": ["/predict", "/model-summary", "/model-comparison",
-                      "/threshold-analysis", "/feature-importance", "/explain", "/dashboard"],
+                      "/threshold-analysis", "/feature-importance", "/explain",
+                      "/explain-prediction", "/dashboard"],
     }
 
 
@@ -133,6 +134,47 @@ def feature_importance():
     best = _DASH.get("best_model", {})
     return {"model": best.get("model"),
             "feature_importance": best.get("feature_importance", [])}
+
+
+@app.post("/explain-prediction")
+def explain_prediction(req: PredictRequest):
+    """Claims-adjuster-facing LLM explanation of THIS claim's model prediction.
+
+    The model makes the prediction (recomputed here from the claim features); the
+    LLM only explains that output to support manual review — it never decides."""
+    _load()
+    if _MODEL is None:
+        raise HTTPException(503, "Model not trained yet. Run src/run_pipeline.py first.")
+    from llm_explain import explanation_available, generate_prediction_explanation
+
+    if not explanation_available():
+        raise HTTPException(
+            503, "OPENAI_API_KEY is not set on the server, so AI explanations are disabled.")
+
+    row = {c: req.features.get(c, None) for c in _MODEL.feature_cols}
+    X = pd.DataFrame([row], columns=_MODEL.feature_cols)
+    proba = float(_MODEL.predict_proba(X)[0])
+    thr = req.threshold if req.threshold is not None else _MODEL.threshold
+    pred = int(proba >= thr)
+    prediction = {
+        "predicted_class": "Declined" if pred else "Completed",
+        "predicted_label": pred,
+        "probability_declined": round(proba, 4),
+        "probability_completed": round(1.0 - proba, 4),
+        "threshold_used": round(float(thr), 4),
+    }
+    model_info = {
+        "model_name": _META.get("model_type"), "stage": _META.get("stage"),
+        "model_version": _META.get("model_version"),
+        "imbalance_strategy": _META.get("imbalance_strategy"),
+        "threshold": _META.get("threshold"), "test_metrics": _META.get("test_metrics", {}),
+    }
+    fi = _META.get("feature_importance") or _DASH.get("best_model", {}).get("feature_importance", [])
+    try:
+        text = generate_prediction_explanation(prediction, req.features, model_info, fi)
+    except Exception as exc:
+        raise HTTPException(502, f"LLM explanation failed: {type(exc).__name__}: {exc}")
+    return {"prediction": prediction, "explanation": text}
 
 
 @app.get("/explain")

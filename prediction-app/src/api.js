@@ -117,3 +117,27 @@ export async function predict(features, threshold) {
   }
   return await res.json();
 }
+
+// Claims-adjuster explanation of THIS claim's prediction. The backend recomputes
+// the model prediction and the LLM only explains it (it never decides).
+// Returns { prediction, explanation }.
+export async function explainPrediction(features, threshold) {
+  const body = { features };
+  if (threshold != null) body.threshold = threshold;
+  const res = await fetch(`${API_BASE}/explain-prediction`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const j = await res.json();
+      msg = j.detail || j.error?.message || msg;
+    } catch (_) {
+      /* keep status */
+    }
+    throw new Error(msg);
+  }
+  return await res.json();
+}
