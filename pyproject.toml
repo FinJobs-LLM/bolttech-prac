@@ -17,9 +17,11 @@ dependencies = [
     "optuna>=3.6",
     "pandas>=2.2",
     "pydantic>=2.7",
+    "pymysql>=1.2.0",
     "python-dotenv>=1.2.2",
     "scikit-learn>=1.5",
     "scipy>=1.11",
+    "sqlalchemy>=2.0",
     "uvicorn[standard]>=0.30",
     "xgboost>=2.1",
 ]

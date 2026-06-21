@@ -148,6 +148,27 @@ OPENAI_API_KEY=sk-... uv run uvicorn serve:app --app-dir src --port 8000
 
 Without the key, `/explain` returns `503` with a clear message (other endpoints are unaffected).
 
+### Saving predictions to AWS RDS (MySQL)
+
+If the `DB_*` variables are set (see `.env.example`), every `POST /predict` saves the input features
+and the prediction to the `claim_predictions` table in MySQL — one row per prediction, **one column
+per feature** (numeric → `DOUBLE`, categorical → `VARCHAR`) plus `predicted_class`, `predicted_label`,
+`probability_declined/completed`, `threshold_used`, `model_version`, `id`, `created_at`. The table is
+**auto-created** on first save (`CREATE TABLE IF NOT EXISTS`, columns derived from the model).
+
+```bash
+# in .env
+DB_HOST=<your-instance>.rds.amazonaws.com
+DB_PORT=3306
+DB_NAME=bolttech_prac
+DB_USER=admin
+DB_PASSWORD=********
+```
+
+Saving is **best-effort**: if the DB is unset or unreachable, `/predict` still returns the prediction
+(the response includes `"saved_to_db": true|false`). The EC2/host must be able to reach RDS on 3306
+(RDS security group + VPC). Uses SQLAlchemy + PyMySQL.
+
 ```bash
 curl -X POST localhost:8000/predict -H 'Content-Type: application/json' \
   -d '{"features": {"rrp": 1799, "excessFee": 139, "coverage": "ADLD",

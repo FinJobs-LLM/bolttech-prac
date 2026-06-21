@@ -85,7 +85,7 @@ def predict(req: PredictRequest):
     proba_declined = float(_MODEL.predict_proba(X)[0])
     thr = req.threshold if req.threshold is not None else _MODEL.threshold
     pred = int(proba_declined >= thr)
-    return {
+    result = {
         "predicted_class": "Declined" if pred == 1 else "Completed",
         "predicted_label": pred,
         "probability_declined": round(proba_declined, 4),
@@ -97,6 +97,12 @@ def predict(req: PredictRequest):
             f"{'Declined' if pred else 'Completed'}."
         ),
     }
+    # Best-effort: persist the features + prediction to RDS (never breaks /predict).
+    import db
+    saved = db.save_prediction(
+        _MODEL, row, {**result, "model_version": _META.get("model_version")})
+    result["saved_to_db"] = saved
+    return result
 
 
 @app.get("/model-summary")
