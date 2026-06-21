@@ -33,6 +33,24 @@ Make sure one of the backends is running (see the main project README), e.g.:
 uv run uvicorn serve:app --app-dir src --port 8000
 ```
 
+## Production build (important)
+
+The `/api` proxy above is a **Vite dev-server feature** — it only exists during `npm run dev`. A
+production `npm run build` produces static files with no proxy, so you must tell the app where the
+FastAPI backend lives in one of two ways:
+
+1. **Bake an absolute API URL at build time** via `VITE_API_BASE`:
+   ```bash
+   VITE_API_BASE=https://your-api.example.com npm run build
+   ```
+   (`api.js` reads `import.meta.env.VITE_API_BASE`, falling back to `/api` when unset.)
+
+2. **Keep the relative `/api` path and add a reverse proxy** (nginx, Caddy, a CDN rule, etc.) in
+   front of the static files that forwards `/api/*` to the FastAPI server.
+
+Inference always runs in FastAPI (`/predict`) — the app never scores locally — so a reachable
+backend is required in every environment.
+
 ## Regenerating the feature config
 If the model is retrained, refresh the bundled config from `reports/dashboard_data.json`:
 
