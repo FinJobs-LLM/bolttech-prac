@@ -155,11 +155,7 @@ export default function App() {
         {explError && <div className="warn-box">{explError}</div>}
         {explanation && (
           <>
-            <div className="explanation">
-              {explanation.split(/\n{2,}/).map((para, i) => (
-                <p key={i}>{para}</p>
-              ))}
-            </div>
+            <Explanation text={explanation} />
             <button className="ghost" onClick={() => generateExplanation(true)} disabled={explLoading}>
               {explLoading ? "Regenerating…" : "Regenerate"}
             </button>
@@ -255,6 +251,64 @@ export default function App() {
 
 const pct = (v) => (v == null ? "—" : (v * 100).toFixed(1) + "%");
 const num = (v) => (v == null ? "—" : Number(v).toFixed(3));
+
+// Inline **bold** -> <strong>.
+function inline(text, keyPrefix) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith("**") && part.endsWith("**") ? (
+      <strong key={`${keyPrefix}-${i}`}>{part.slice(2, -2)}</strong>
+    ) : (
+      part
+    )
+  );
+}
+
+// Minimal Markdown renderer for the AI explanation (headings, bullet/numbered
+// lists, bold). Dependency-free — the explanation is short and well-structured.
+function Explanation({ text }) {
+  const lines = text.split("\n");
+  const blocks = [];
+  let list = null;
+  const flushList = () => {
+    if (list) {
+      blocks.push({ type: "ul", items: list });
+      list = null;
+    }
+  };
+  lines.forEach((raw) => {
+    const line = raw.trim();
+    if (!line) return flushList();
+    const heading = line.match(/^#{1,6}\s+(.*)$/);
+    const bullet = line.match(/^(?:[-*]|\d+\.)\s+(.*)$/);
+    if (heading) {
+      flushList();
+      blocks.push({ type: "h", text: heading[1] });
+    } else if (bullet) {
+      (list ||= []).push(bullet[1]);
+    } else {
+      flushList();
+      blocks.push({ type: "p", text: line });
+    }
+  });
+  flushList();
+
+  return (
+    <div className="explanation">
+      {blocks.map((b, i) => {
+        if (b.type === "h") return <h4 key={i}>{inline(b.text, i)}</h4>;
+        if (b.type === "ul")
+          return (
+            <ul key={i}>
+              {b.items.map((it, j) => (
+                <li key={j}>{inline(it, `${i}-${j}`)}</li>
+              ))}
+            </ul>
+          );
+        return <p key={i}>{inline(b.text, i)}</p>;
+      })}
+    </div>
+  );
+}
 
 // Live "model card": the current best model's info fetched from the API.
 function ModelInfo({ info, error, fallback }) {

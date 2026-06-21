@@ -112,3 +112,8 @@ code { background: #0b1220; border-radius: 6px; padding: 1px 5px; }
   padding: 2px 8px; border-radius: 999px; }
 .explanation { line-height: 1.65; font-size: 14px; margin: 6px 0 14px; }
 .explanation p { margin: 0 0 10px; }
+.explanation h4 { font-size: 14px; margin: 16px 0 6px; color: #fff; }
+.explanation h4:first-child { margin-top: 0; }
+.explanation ul { margin: 0 0 10px; padding-left: 20px; }
+.explanation li { margin: 0 0 5px; }
+.explanation strong { color: #fff; }

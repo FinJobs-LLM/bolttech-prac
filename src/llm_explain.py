@@ -19,9 +19,13 @@ SYSTEM_PROMPT = (
     "The model predicts a claim's `status`; the POSITIVE class is `Declined` (a claim "
     "the model flags as likely to be declined). The data is imbalanced (~16% Declined), "
     "so PR-AUC, recall and precision for Declined matter more than raw accuracy. "
-    "Rules: only use the numbers provided — never invent metrics or features; keep it to "
-    "roughly 150-220 words; use short paragraphs or bullets; do not give financial advice; "
-    "end with one sentence on a key limitation."
+    "Always include a dedicated 'Feature importance' section that (a) briefly explains, in plain "
+    "words, what the importance scores represent for this model, and (b) walks through the most "
+    "influential features in rank order with a short, clearly-hedged business intuition for each, "
+    "noting these are how-much-the-model-relies-on-a-feature signals, not proven causes. "
+    "Rules: only use the numbers/features provided — never invent metrics or features; keep it to "
+    "roughly 250-350 words; use short paragraphs and bullets with section headings; do not give "
+    "financial advice; end with one sentence on a key limitation."
 )
 
 HUMAN_TEMPLATE = (
@@ -32,12 +36,31 @@ HUMAN_TEMPLATE = (
     "- Imbalance strategy: {imbalance_strategy}\n"
     "- Decision threshold: {threshold}\n\n"
     "TEST METRICS (held-out)\n{metrics_block}\n\n"
-    "TOP FEATURE IMPORTANCES (higher = more influential)\n{features_block}\n\n"
-    "Write: (1) what the model does and how to read its decisions at the threshold, "
-    "(2) how good it is, emphasising PR-AUC / recall / precision for Declined over accuracy "
-    "and why, (3) which features drive it and a plausible, clearly-hedged intuition for the "
-    "top few, and (4) one key limitation."
+    "FEATURE IMPORTANCE — metric: {importance_metric}\n"
+    "(ranked, higher = more influential)\n{features_block}\n\n"
+    "Write these sections with headings:\n"
+    "(1) What the model does and how to read its decisions at the threshold.\n"
+    "(2) How good it is — emphasise PR-AUC / recall / precision for Declined over accuracy, and why.\n"
+    "(3) Feature importance — first explain in one or two sentences what the importance metric "
+    "above measures, then interpret the ranked features: cover the top 5-7 individually with a "
+    "short hedged intuition for each, and briefly note any features that barely matter. Make clear "
+    "these reflect what the model relies on, not proven cause and effect.\n"
+    "(4) One key limitation."
 )
+
+
+def _importance_metric(model_name: str) -> str:
+    """Human description of the importance metric used by the served model type."""
+    name = (model_name or "").lower()
+    if "catboost" in name:
+        return "CatBoost PredictionValuesChange — average change in the prediction when a feature's value changes (scores sum to ~100)"
+    if "randomforest" in name or "random forest" in name:
+        return "Random Forest mean decrease in impurity / Gini importance (scores sum to ~1)"
+    if "xgboost" in name:
+        return "XGBoost gain — average loss reduction from splits using the feature (scores sum to ~1)"
+    if "lightgbm" in name:
+        return "LightGBM split count — how often the feature is used to split (raw counts)"
+    return "model-internal feature importance (higher = the model relies on it more)"
 
 
 def explanation_available() -> bool:
@@ -60,9 +83,11 @@ def _fmt_metrics(m: dict) -> str:
     return "\n".join(lines) or "- (none provided)"
 
 
-def _fmt_features(items: list, top_n: int = 12) -> str:
+def _fmt_features(items: list, top_n: int = 15) -> str:
     rows = sorted(items, key=lambda x: x.get("importance", 0), reverse=True)[:top_n]
-    return "\n".join(f"- {r['feature']}: {float(r['importance']):.2f}" for r in rows) or "- (none)"
+    return "\n".join(
+        f"{i}. {r['feature']}: {float(r['importance']):.2f}" for i, r in enumerate(rows, 1)
+    ) or "- (none)"
 
 
 def generate_model_explanation(model_info: dict, feature_importance: list,
@@ -78,18 +103,20 @@ def generate_model_explanation(model_info: dict, feature_importance: list,
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_openai import ChatOpenAI
 
-    llm = ChatOpenAI(model=MODEL_NAME, temperature=temperature, max_tokens=450, timeout=60)
+    llm = ChatOpenAI(model=MODEL_NAME, temperature=temperature, max_tokens=750, timeout=60)
     prompt = ChatPromptTemplate.from_messages(
         [("system", SYSTEM_PROMPT), ("human", HUMAN_TEMPLATE)]
     )
+    model_name = model_info.get("model_name") or model_info.get("model") or "unknown"
     chain = prompt | llm
     resp = chain.invoke({
-        "model_name": model_info.get("model_name") or model_info.get("model") or "unknown",
+        "model_name": model_name,
         "stage": model_info.get("stage", ""),
         "model_version": model_info.get("model_version") or "n/a",
         "imbalance_strategy": model_info.get("imbalance_strategy", "n/a"),
         "threshold": model_info.get("threshold", "n/a"),
         "metrics_block": _fmt_metrics(model_info.get("test_metrics", {}) or {}),
+        "importance_metric": _importance_metric(model_name),
         "features_block": _fmt_features(feature_importance or []),
     })
     return resp.content.strip()
