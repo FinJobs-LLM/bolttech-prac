@@ -14,13 +14,13 @@ libraries (training), [Optuna](./optuna.md) (search), and `run_pipeline.py` (sel
 
 | File | Role |
 |---|---|
-| `src/mlflow_tracking.py` | Initialization + small logging helpers. |
-| `src/optimize_optuna.py` | Opens the per-family **parent** run and one **nested child run per trial**. |
+| `src/ml/mlflow_tracking.py` | Initialization + small logging helpers. |
+| `src/ml/optimize_optuna.py` | Opens the per-family **parent** run and one **nested child run per trial**. |
 | `src/run_pipeline.py` (`evaluate_model`) | Opens one **evaluation run per model** (baseline & optimized) and logs metrics, figures and the model artifact. |
 
 ## Configuration
 
-Set once in `src/mlflow_tracking.py::init_mlflow()`:
+Set once in `src/ml/mlflow_tracking.py::init_mlflow()`:
 
 - **Tracking store:** a local file store at `./mlruns` (`mlflow.set_tracking_uri(<repo>/mlruns)`).
   No database or server process is required — the project stays self-contained.

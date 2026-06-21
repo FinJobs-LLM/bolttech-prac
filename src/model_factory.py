@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from config import IMBALANCE_WEIGHT, RANDOM_STATE
-from preprocessing import (
+from ml.preprocessing import (
     build_tree_preprocessor,
     catboost_cat_indices,
     prepare_catboost_frame,

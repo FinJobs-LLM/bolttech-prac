@@ -11,7 +11,7 @@ PR-AUC), tune the decision threshold (that is `threshold_tuning.py`), or record 
 
 ## Where it lives in the code
 
-All Optuna logic is in **`src/optimize_optuna.py`**:
+All Optuna logic is in **`src/ml/optimize_optuna.py`**:
 
 | Function | Role |
 |---|---|

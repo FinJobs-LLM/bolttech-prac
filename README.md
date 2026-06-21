@@ -40,19 +40,25 @@ bolttech-prac/
 │   ├── threshold_analysis.csv   # per-threshold metrics for best model (generated)
 │   ├── final_model_report.md    # plain-English report (generated)
 │   └── dashboard_data.json      # single bundle consumed by API + front-end (generated)
-├── src/
-│   ├── config.py                # paths, constants, seed, positive-class convention
-│   ├── data.py                  # load, validate, encode target, stratified split
-│   ├── preprocessing.py         # tree pipeline (impute+onehot) / CatBoost native cats
-│   ├── model_factory.py         # build/fit 4 families + ClaimModel wrapper (predict/importance)
-│   ├── train_baselines.py       # baseline configs per family
-│   ├── optimize_optuna.py       # Optuna studies (maximize val PR-AUC) + nested MLflow runs
-│   ├── evaluate.py              # metrics + plots
-│   ├── threshold_tuning.py      # 0.05–0.95 sweep, pick best F1(Declined)
-│   ├── explainability.py        # feature-importance grouping
-│   ├── mlflow_tracking.py       # MLflow helpers
-│   ├── run_pipeline.py          # ORCHESTRATOR — runs everything, writes all artifacts
-│   └── serve.py                 # FastAPI service
+├── src/                         # Python backend (modules run with `--app-dir src`)
+│   ├── config.py                # paths, constants, seed, positive-class convention, .env loader
+│   ├── model_factory.py         # build/fit 4 families + ClaimModel (class of the saved model artifact)
+│   ├── ml/                      # offline training/evaluation library (used by run_pipeline.py)
+│   │   ├── data.py              # load, validate, encode target, stratified split
+│   │   ├── preprocessing.py     # tree pipeline (impute+onehot) / CatBoost native cats
+│   │   ├── train_baselines.py   # baseline configs per family
+│   │   ├── optimize_optuna.py   # Optuna studies (maximize val PR-AUC) + nested MLflow runs
+│   │   ├── evaluate.py          # metrics + plots
+│   │   ├── threshold_tuning.py  # 0.05–0.95 sweep, pick best F1(Declined)
+│   │   ├── explainability.py    # feature-importance grouping
+│   │   └── mlflow_tracking.py   # MLflow helpers
+│   ├── run_pipeline.py          # ORCHESTRATOR — trains/optimizes, writes all artifacts
+│   ├── load_dataset_to_db.py    # load the dataset into a SQL table
+│   ├── serve.py                 # FastAPI dashboard backend (uvicorn serve:app)
+│   ├── serve_api.py             # FastAPI production serving API (uvicorn serve_api:app)
+│   ├── db.py                    # RDS/MySQL persistence
+│   ├── llm_explain.py           # LangChain + gpt-4o-mini explanations
+│   └── prompts/                 # LLM prompt templates (per audience)
 ├── model-dashboard/             # Front-end app #1: model-optimization dashboard (Vite + React, 7 pages)
 ├── prediction-app/              # Front-end app #2: claim prediction & review (Vite + React, 5 tabs)
 ├── notebooks/model_experiment_summary.ipynb

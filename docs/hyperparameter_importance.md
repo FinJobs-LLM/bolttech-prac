@@ -9,7 +9,7 @@ their validation PR-AUC scores, **not** from the final fitted model.
 
 ## Where it happens
 
-`src/optimize_optuna.py` (in `optimize_model`):
+`src/ml/optimize_optuna.py` (in `optimize_model`):
 
 ```python
 importances = {k: float(v) for k, v in

@@ -13,11 +13,11 @@ Two steps:
 
 1. **`src/model_factory.py` → `ClaimModel.feature_importance()`** — pulls the raw importance from the
    fitted estimator, aligned with the feature names the estimator actually saw.
-2. **`src/explainability.py` → `grouped_importances()`** — rolls one-hot dummy columns back up to
+2. **`src/ml/explainability.py` → `grouped_importances()`** — rolls one-hot dummy columns back up to
    their original feature, sorts descending, drops zeros.
 
 The grouped result is stored in `dashboard_data.json` at `best_model.feature_importance` (top 25),
-plotted by `evaluate.plot_feature_importance`, and shown in `model-dashboard/src/pages/FinalModel.jsx`.
+plotted by `ml.evaluate.plot_feature_importance`, and shown in `model-dashboard/src/pages/FinalModel.jsx`.
 
 ## The raw importance — method depends on the model family
 
