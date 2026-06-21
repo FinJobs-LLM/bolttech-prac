@@ -11,6 +11,16 @@ from pathlib import Path
 
 # --- Paths ---------------------------------------------------------------
 ROOT = Path(__file__).resolve().parents[1]
+
+# Load environment variables from a local .env (e.g. OPENAI_API_KEY) if present.
+# Existing environment variables take precedence (override=False).
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(ROOT / ".env", override=False)
+except ImportError:  # python-dotenv is optional; env vars still work without it
+    pass
+
 DATA_PATH = ROOT / "data" / "preprocessed_data" / "claim_approval_feature_dataset_v2.xlsx"
 
 MODELS_DIR = ROOT / "models"

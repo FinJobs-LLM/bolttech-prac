@@ -17,6 +17,7 @@ dependencies = [
     "optuna>=3.6",
     "pandas>=2.2",
     "pydantic>=2.7",
+    "python-dotenv>=1.2.2",
     "scikit-learn>=1.5",
     "scipy>=1.11",
     "uvicorn[standard]>=0.30",
