@@ -10,7 +10,7 @@ It now contains a full ML system — see `README.md` for the authoritative guide
   threshold tuning, evaluation, explainability, and a FastAPI service (`serve.py`).
 - `frontend/` — Vite + React explainability dashboard.
 - `reports/`, `models/`, `mlruns/` — generated artifacts (run `python src/run_pipeline.py`).
-- `requirements.txt` — Python deps. Use the project `.venv`; LightGBM needs `libgomp1` (`apt-get install -y libgomp1`).
+- `pyproject.toml` + `uv.lock` — Python deps managed with `uv` (`uv sync`); LightGBM needs `libgomp1` (`apt-get install -y libgomp1`).
 
 Modeling rules (do not break): optimize/rank on **PR-AUC**, not accuracy; stratified 70/15/15; fit
 preprocessing on train only; the test set is used once; seed 42 everywhere.

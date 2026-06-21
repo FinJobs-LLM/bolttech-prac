@@ -60,7 +60,8 @@ bolttech-prac/
 │   ├── optuna.md                # role of Optuna (hyperparameter search)
 │   ├── hyperparameter_importance.md  # how hyperparameter importance is computed
 │   └── feature_importance.md         # how feature importance is computed
-├── requirements.txt
+├── pyproject.toml               # project + dependencies (uv)
+├── uv.lock                      # pinned, reproducible dependency lock
 └── README.md
 ```
 
@@ -74,16 +75,19 @@ bolttech-prac/
 
 ## 1. Install dependencies
 
-Python 3.11+ (developed on 3.14). LightGBM needs the OpenMP runtime.
+Python 3.11+ (developed on 3.14). Dependencies are managed with [uv](https://docs.astral.sh/uv/)
+(`pyproject.toml` + `uv.lock`). LightGBM needs the OpenMP runtime.
 
 ```bash
 # system lib for LightGBM (Debian/Ubuntu)
 sudo apt-get install -y libgomp1
 
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+# install uv if needed: curl -LsSf https://astral.sh/uv/install.sh | sh
+uv sync                 # creates .venv and installs the locked dependencies
 ```
+
+Then either activate the env (`source .venv/bin/activate`) or prefix commands with `uv run`
+(e.g. `uv run python src/run_pipeline.py`, `uv run uvicorn serve_api:app --app-dir src --port 8001`).
 
 Front-end (Node 18+):
 

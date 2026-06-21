@@ -1,0 +1,28 @@
+[project]
+name = "bolttech-prac"
+version = "0.1.0"
+description = "Explainable ML optimization for claim-approval prediction (MLflow + Optuna + FastAPI)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "catboost>=1.2",
+    "fastapi>=0.111",
+    "joblib>=1.4",
+    "lightgbm>=4.3",
+    "matplotlib>=3.8",
+    "mlflow>=2.14",
+    "numpy>=1.26",
+    "openpyxl>=3.1",
+    "optuna>=3.6",
+    "pandas>=2.2",
+    "pydantic>=2.7",
+    "scikit-learn>=1.5",
+    "scipy>=1.11",
+    "uvicorn[standard]>=0.30",
+    "xgboost>=2.1",
+]
+
+[tool.uv]
+# This repo runs code from src/ directly; it is not an installable package,
+# so uv should not try to build/install the project itself.
+package = false
