@@ -1,0 +1,195 @@
+{
+  "model": "CatBoost",
+  "stage": "optimized",
+  "model_version": "catboost-optimized",
+  "default_threshold": 0.44,
+  "feature_meta": {
+    "excessFee": {
+      "type": "numeric",
+      "default": 139.0
+    },
+    "rrp": {
+      "type": "numeric",
+      "default": 1799.0
+    },
+    "oldBalanceRRP": {
+      "type": "numeric",
+      "default": 1799.0
+    },
+    "remaining_rrp_ratio": {
+      "type": "numeric",
+      "default": 1.0
+    },
+    "used_rrp_amount": {
+      "type": "numeric",
+      "default": 0.0
+    },
+    "policy_duration_months": {
+      "type": "numeric",
+      "default": 12.0
+    },
+    "policy_start_year": {
+      "type": "numeric",
+      "default": 2023.0
+    },
+    "policy_start_month": {
+      "type": "numeric",
+      "default": 5.0
+    },
+    "days_from_purchase_to_policy": {
+      "type": "numeric",
+      "default": 0.0
+    },
+    "has_prior_rrp_usage": {
+      "type": "categorical",
+      "default": "False",
+      "options": [
+        "False",
+        "True"
+      ]
+    },
+    "coverage": {
+      "type": "categorical",
+      "default": "ADLD",
+      "options": [
+        "ADLD",
+        "ADLD/THEFT"
+      ]
+    },
+    "retailerName": {
+      "type": "categorical",
+      "default": "WUAWEI eStore",
+      "options": [
+        "WUAWEI eStore",
+        "WUAWEI SCPUserPortal",
+        "Unknown",
+        "SWEDEN ESTORE BULK UPLOAD",
+        "PSFM RETAIL ELECTRONICS",
+        "FINLAND ESTORE BULK UPLOAD",
+        "EVOLLIS",
+        "BREDA SES",
+        "bolttech D2C",
+        "UTRECHT SES"
+      ]
+    },
+    "deviceType": {
+      "type": "categorical",
+      "default": "SMARTPHONES",
+      "options": [
+        "SMARTPHONES",
+        "TABLETS",
+        "WEARABLES",
+        "LAPTOPS",
+        "EARBUDS"
+      ]
+    },
+    "channel": {
+      "type": "categorical",
+      "default": "Online Portal",
+      "options": [
+        "Online Portal",
+        "Email",
+        "Phone Call",
+        "Facebook",
+        "Whatsapp"
+      ]
+    },
+    "claimType": {
+      "type": "categorical",
+      "default": "Accidental Damage",
+      "options": [
+        "Accidental Damage",
+        "Theft",
+        "Liquid Damage"
+      ]
+    },
+    "country": {
+      "type": "categorical",
+      "default": "NL",
+      "options": [
+        "NL",
+        "SE",
+        "FI"
+      ]
+    },
+    "turnOnOff": {
+      "type": "categorical",
+      "default": "1",
+      "options": [
+        "1",
+        "0",
+        "Unknown"
+      ]
+    },
+    "touchScreen": {
+      "type": "categorical",
+      "default": "0",
+      "options": [
+        "0",
+        "1",
+        "Unknown"
+      ]
+    },
+    "smashed": {
+      "type": "categorical",
+      "default": "Unknown",
+      "options": [
+        "Unknown",
+        "0"
+      ]
+    },
+    "frontCamera": {
+      "type": "categorical",
+      "default": "1",
+      "options": [
+        "1",
+        "0",
+        "Unknown"
+      ]
+    },
+    "backCamera": {
+      "type": "categorical",
+      "default": "1",
+      "options": [
+        "1",
+        "0",
+        "Unknown"
+      ]
+    },
+    "frontOrBackCamera": {
+      "type": "categorical",
+      "default": "Unknown",
+      "options": [
+        "Unknown",
+        "0"
+      ]
+    },
+    "audio": {
+      "type": "categorical",
+      "default": "1",
+      "options": [
+        "1",
+        "0",
+        "Unknown"
+      ]
+    },
+    "mic": {
+      "type": "categorical",
+      "default": "1",
+      "options": [
+        "1",
+        "0",
+        "Unknown"
+      ]
+    },
+    "buttons": {
+      "type": "categorical",
+      "default": "0",
+      "options": [
+        "0",
+        "Unknown",
+        "1"
+      ]
+    }
+  }
+}
