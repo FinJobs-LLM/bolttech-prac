@@ -8,8 +8,28 @@
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
+// fetch() with a timeout so a stalled request surfaces an error instead of
+// hanging the UI forever (e.g. a dead dev-server/tunnel connection).
+async function fetchWithTimeout(url, opts = {}, ms = 30000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...opts, signal: ctrl.signal });
+  } catch (e) {
+    if (e.name === "AbortError") {
+      throw new Error(
+        `Request to ${url} timed out after ${ms / 1000}s. Is the FastAPI backend running, ` +
+          `and (if using VS Code port forwarding) did you hard-refresh the page?`
+      );
+    }
+    throw new Error(`Network error calling ${url}: ${e.message}`);
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 export async function loadConfig() {
-  const res = await fetch("/feature_config.json", { cache: "no-store" });
+  const res = await fetchWithTimeout("/feature_config.json", { cache: "no-store" });
   if (!res.ok) throw new Error("Could not load feature_config.json");
   return await res.json();
 }
@@ -22,7 +42,7 @@ export async function loadConfig() {
 export async function getModelInfo() {
   // Try the richer /metadata first.
   try {
-    const res = await fetch(`${API_BASE}/metadata`);
+    const res = await fetchWithTimeout(`${API_BASE}/metadata`);
     if (res.ok) {
       const d = await res.json();
       return {
@@ -41,7 +61,7 @@ export async function getModelInfo() {
     /* fall through to /model-summary */
   }
 
-  const res = await fetch(`${API_BASE}/model-summary`);
+  const res = await fetchWithTimeout(`${API_BASE}/model-summary`);
   if (!res.ok) throw new Error(`Could not load model info (${res.status})`);
   const d = await res.json();
   return {
@@ -63,7 +83,7 @@ export async function getModelInfo() {
 // Returns { model, items: [{feature, importance}] } (items sorted desc).
 export async function getFeatureImportance() {
   try {
-    const res = await fetch(`${API_BASE}/metadata`);
+    const res = await fetchWithTimeout(`${API_BASE}/metadata`);
     if (res.ok) {
       const d = await res.json();
       if (Array.isArray(d.feature_importance) && d.feature_importance.length) {
@@ -73,7 +93,7 @@ export async function getFeatureImportance() {
   } catch (_) {
     /* fall through */
   }
-  const res = await fetch(`${API_BASE}/feature-importance`);
+  const res = await fetchWithTimeout(`${API_BASE}/feature-importance`);
   if (!res.ok) throw new Error(`Could not load feature importance (${res.status})`);
   const d = await res.json();
   return { model: d.model, items: d.feature_importance || [] };
@@ -83,7 +103,7 @@ export async function getFeatureImportance() {
 // LangChain, server-side). Returns { explanation, cached, model, model_version }.
 // Throws with a readable message (e.g. when the server has no OPENAI_API_KEY).
 export async function getExplanation(refresh = false) {
-  const res = await fetch(`${API_BASE}/explain${refresh ? "?refresh=true" : ""}`);
+  const res = await fetchWithTimeout(`${API_BASE}/explain${refresh ? "?refresh=true" : ""}`);
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try {
@@ -100,7 +120,7 @@ export async function getExplanation(refresh = false) {
 export async function predict(features, threshold) {
   const body = { features };
   if (threshold != null) body.threshold = threshold;
-  const res = await fetch(`${API_BASE}/predict`, {
+  const res = await fetchWithTimeout(`${API_BASE}/predict`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -124,7 +144,7 @@ export async function predict(features, threshold) {
 export async function explainPrediction(features, threshold) {
   const body = { features };
   if (threshold != null) body.threshold = threshold;
-  const res = await fetch(`${API_BASE}/explain-prediction`, {
+  const res = await fetchWithTimeout(`${API_BASE}/explain-prediction`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
