@@ -28,6 +28,8 @@ export default function App() {
   const [adjLoading, setAdjLoading] = useState(false);
   const [adjError, setAdjError] = useState(null);
 
+  const [tab, setTab] = useState("predict"); // predict | model | adjuster
+
   // Load bundled feature metadata once (powers the input form).
   useEffect(() => {
     loadConfig()
@@ -152,148 +154,214 @@ export default function App() {
     );
   }
 
+  const TABS = [
+    ["predict", "Prediction"],
+    ["model", "Model & Features"],
+    ["adjuster", "Claims Adjuster"],
+  ];
+
   return (
     <div className="page">
       <header>
-        <h1>Claim Approval — Prediction</h1>
+        <h1>Claim Approval — Assistant</h1>
         <p className="subtitle">
-          Enter a claim's feature values and get the model's prediction — positive class{" "}
-          <strong>Declined</strong>.
+          Predict a claim's <strong>status</strong> (positive class <strong>Declined</strong>),
+          inspect the model, and get a claims-adjuster explanation of the result.
         </p>
       </header>
 
-      <ModelInfo info={modelInfo} error={modelInfoError} fallback={config} />
-
-      <FeatureImportance data={importance} error={importanceError} />
-
-      <section className="panel">
-        <h2>
-          AI explanation <span className="badge ai">gpt-4o-mini</span>
-        </h2>
-        <p className="note" style={{ marginTop: 0 }}>
-          A plain-English summary of the model and what drives it, generated on the server with
-          LangChain. Click to generate (cached after the first request).
-        </p>
-        {!explanation && (
-          <button className="primary" onClick={() => generateExplanation(false)} disabled={explLoading}>
-            {explLoading ? "Generating…" : "Generate AI explanation"}
+      <nav className="tabs">
+        {TABS.map(([key, label]) => (
+          <button
+            key={key}
+            className={"tab" + (tab === key ? " active" : "")}
+            onClick={() => setTab(key)}
+          >
+            {label}
+            {key === "adjuster" && adjExpl && <span className="dot" />}
           </button>
-        )}
-        {explError && <div className="warn-box">{explError}</div>}
-        {explanation && (
-          <>
-            <Explanation text={explanation} />
-            <button className="ghost" onClick={() => generateExplanation(true)} disabled={explLoading}>
-              {explLoading ? "Regenerating…" : "Regenerate"}
-            </button>
-          </>
-        )}
-      </section>
+        ))}
+      </nav>
 
-      <section className="panel">
-        <div className="form-grid">
-          {features.map((f) => {
-            const meta = config.feature_meta[f];
-            return (
-              <label className="field" key={f}>
-                <span className="name">{f}</span>
-                {meta.type === "categorical" ? (
-                  <select value={values[f]} onChange={(e) => setVal(f, e.target.value)}>
-                    {meta.options.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="number"
-                    step="any"
-                    value={values[f]}
-                    onChange={(e) => setVal(f, e.target.value)}
-                  />
-                )}
+      {/* ---------------- Prediction tab ---------------- */}
+      {tab === "predict" && (
+        <>
+          <section className="panel">
+            <div className="form-grid">
+              {features.map((f) => {
+                const meta = config.feature_meta[f];
+                return (
+                  <label className="field" key={f}>
+                    <span className="name">{f}</span>
+                    {meta.type === "categorical" ? (
+                      <select value={values[f]} onChange={(e) => setVal(f, e.target.value)}>
+                        {meta.options.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="number"
+                        step="any"
+                        value={values[f]}
+                        onChange={(e) => setVal(f, e.target.value)}
+                      />
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="controls">
+              <label className="field" style={{ maxWidth: 220, marginBottom: 0 }}>
+                <span className="name">Decision threshold</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="1"
+                  value={thr}
+                  onChange={(e) => setThr(e.target.value)}
+                />
               </label>
-            );
-          })}
-        </div>
-
-        <div className="controls">
-          <label className="field" style={{ maxWidth: 220, marginBottom: 0 }}>
-            <span className="name">Decision threshold</span>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              max="1"
-              value={thr}
-              onChange={(e) => setThr(e.target.value)}
-            />
-          </label>
-          <button className="primary" onClick={run} disabled={busy}>
-            {busy ? "Scoring…" : "Predict"}
-          </button>
-          <button className="ghost" onClick={resetDefaults} disabled={busy}>
-            Reset
-          </button>
-        </div>
-      </section>
-
-      {error && <div className="warn-box">{error}</div>}
-
-      {result && (
-        <section className="panel">
-          <h2>
-            Prediction:{" "}
-            <span
-              className="badge"
-              style={{
-                background: result.predicted_label ? "#ef4444" : "#22c55e",
-                color: result.predicted_label ? "white" : "#06281a",
-              }}
-            >
-              {result.predicted_class}
-            </span>
-          </h2>
-          <div className="result-box">
-            <div className="card">
-              <div className="label">P(Declined)</div>
-              <div className="value">{(result.probability_declined * 100).toFixed(1)}%</div>
+              <button className="primary" onClick={run} disabled={busy}>
+                {busy ? "Scoring…" : "Predict"}
+              </button>
+              <button className="ghost" onClick={resetDefaults} disabled={busy}>
+                Reset
+              </button>
             </div>
-            <div className="card">
-              <div className="label">P(Completed)</div>
-              <div className="value">{(result.probability_completed * 100).toFixed(1)}%</div>
-            </div>
-            <div className="card">
-              <div className="label">Threshold used</div>
-              <div className="value">{result.threshold_used}</div>
-            </div>
-          </div>
-          {result.explanation && <p className="explain">{result.explanation}</p>}
+          </section>
 
-          <div className="adjuster">
-            <h3>
-              Claims-adjuster explanation <span className="badge ai">gpt-4o-mini</span>
-            </h3>
+          {error && <div className="warn-box">{error}</div>}
+
+          {result && (
+            <section className="panel">
+              <h2>
+                Prediction:{" "}
+                <span
+                  className="badge"
+                  style={{
+                    background: result.predicted_label ? "#ef4444" : "#22c55e",
+                    color: result.predicted_label ? "white" : "#06281a",
+                  }}
+                >
+                  {result.predicted_class}
+                </span>
+              </h2>
+              <div className="result-box">
+                <div className="card">
+                  <div className="label">P(Declined)</div>
+                  <div className="value">{(result.probability_declined * 100).toFixed(1)}%</div>
+                </div>
+                <div className="card">
+                  <div className="label">P(Completed)</div>
+                  <div className="value">{(result.probability_completed * 100).toFixed(1)}%</div>
+                </div>
+                <div className="card">
+                  <div className="label">Threshold used</div>
+                  <div className="value">{result.threshold_used}</div>
+                </div>
+              </div>
+              {result.explanation && <p className="explain">{result.explanation}</p>}
+              <p className="note">
+                For a manual-review explanation of this result, open the{" "}
+                <button className="link" onClick={() => setTab("adjuster")}>
+                  Claims Adjuster
+                </button>{" "}
+                tab.
+              </p>
+            </section>
+          )}
+        </>
+      )}
+
+      {/* ---------------- Model & Features tab ---------------- */}
+      {tab === "model" && (
+        <>
+          <ModelInfo info={modelInfo} error={modelInfoError} fallback={config} />
+          <FeatureImportance data={importance} error={importanceError} />
+          <section className="panel">
+            <h2>
+              AI explanation <span className="badge ai">gpt-4o-mini</span>
+            </h2>
             <p className="note" style={{ marginTop: 0 }}>
-              A professional explanation of this prediction for manual review. The model made the
-              decision; this only explains it — it does not approve or decline the claim.
+              A plain-English summary of the model and what drives it, generated on the server with
+              LangChain. Click to generate (cached after the first request).
             </p>
-            {!adjExpl && (
-              <button className="primary" onClick={explainForAdjuster} disabled={adjLoading}>
-                {adjLoading ? "Generating…" : "Explain for claims adjuster"}
+            {!explanation && (
+              <button className="primary" onClick={() => generateExplanation(false)} disabled={explLoading}>
+                {explLoading ? "Generating…" : "Generate AI explanation"}
               </button>
             )}
-            {adjError && <div className="warn-box">{adjError}</div>}
-            {adjExpl && (
+            {explError && <div className="warn-box">{explError}</div>}
+            {explanation && (
               <>
-                <Explanation text={adjExpl} />
-                <button className="ghost" onClick={explainForAdjuster} disabled={adjLoading}>
-                  {adjLoading ? "Regenerating…" : "Regenerate"}
+                <Explanation text={explanation} />
+                <button className="ghost" onClick={() => generateExplanation(true)} disabled={explLoading}>
+                  {explLoading ? "Regenerating…" : "Regenerate"}
                 </button>
               </>
             )}
-          </div>
+          </section>
+        </>
+      )}
+
+      {/* ---------------- Claims Adjuster tab ---------------- */}
+      {tab === "adjuster" && (
+        <section className="panel">
+          <h2>
+            Claims-Adjuster Explanation <span className="badge ai">gpt-4o-mini</span>
+          </h2>
+          <p className="note" style={{ marginTop: 0 }}>
+            A professional explanation of the current prediction for manual review. The ML model
+            makes the decision; this only explains the model's output — it does not approve or
+            decline the claim.
+          </p>
+
+          {!result ? (
+            <div className="warn-box">
+              No prediction yet. Enter a claim and click <strong>Predict</strong> on the{" "}
+              <button className="link" onClick={() => setTab("predict")}>
+                Prediction
+              </button>{" "}
+              tab, then return here for an adjuster-focused explanation of that result.
+            </div>
+          ) : (
+            <>
+              <div className="result-box">
+                <div className="card">
+                  <div className="label">Model output</div>
+                  <div className="value small">{result.predicted_class}</div>
+                </div>
+                <div className="card">
+                  <div className="label">P(Declined)</div>
+                  <div className="value">{(result.probability_declined * 100).toFixed(1)}%</div>
+                </div>
+                <div className="card">
+                  <div className="label">Threshold</div>
+                  <div className="value">{result.threshold_used}</div>
+                </div>
+              </div>
+
+              {!adjExpl && (
+                <button className="primary" onClick={explainForAdjuster} disabled={adjLoading}>
+                  {adjLoading ? "Generating…" : "Explain this result for a claims adjuster"}
+                </button>
+              )}
+              {adjError && <div className="warn-box">{adjError}</div>}
+              {adjExpl && (
+                <>
+                  <Explanation text={adjExpl} />
+                  <button className="ghost" onClick={explainForAdjuster} disabled={adjLoading}>
+                    {adjLoading ? "Regenerating…" : "Regenerate"}
+                  </button>
+                </>
+              )}
+            </>
+          )}
         </section>
       )}
     </div>

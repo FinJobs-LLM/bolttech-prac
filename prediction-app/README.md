@@ -6,6 +6,12 @@ see the model's prediction (predicted class, P(Declined), P(Completed), threshol
 This is a separate project from `../frontend/` (the full dashboard) and does not depend on it. It
 replicates only the "Prediction Demo" functionality.
 
+## Tabs
+The app has a tab menu:
+- **Prediction** — enter claim features, pick a threshold, get the model's prediction.
+- **Model & Features** — live model card, feature-importance bar chart, and an AI explanation of the model.
+- **Claims Adjuster** — an adjuster-focused explanation of the *current* prediction (see below).
+
 ## How it works
 - Feature inputs (defaults + categorical options) are bundled in `public/feature_config.json`,
   generated from the trained model's metadata — so the form renders without any backend.
