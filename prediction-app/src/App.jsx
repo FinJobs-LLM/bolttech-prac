@@ -431,6 +431,23 @@ export default function App() {
                 </div>
               </div>
 
+              {!adjExpl && (
+                <button className="primary" onClick={explainForAdjuster} disabled={adjLoading}>
+                  {adjLoading ? "Generating…" : "Explain this result for a claims adjuster"}
+                </button>
+              )}
+              {adjError && <div className="warn-box">{adjError}</div>}
+              {adjExpl && (
+                <>
+                  <Explanation text={adjExpl} />
+                  <button className="ghost" onClick={explainForAdjuster} disabled={adjLoading}>
+                    {adjLoading ? "Regenerating…" : "Regenerate"}
+                  </button>
+                  <SaveToDb save={adjSave} canSave={!!result.prediction_id}
+                    onSave={() => saveExplanation("adjuster")} />
+                </>
+              )}
+
               <div className="decision">
                 <h3>Final decision (claims adjuster)</h3>
                 <p className="note" style={{ marginTop: 0 }}>
@@ -465,23 +482,6 @@ export default function App() {
                   </>
                 )}
               </div>
-
-              {!adjExpl && (
-                <button className="primary" onClick={explainForAdjuster} disabled={adjLoading}>
-                  {adjLoading ? "Generating…" : "Explain this result for a claims adjuster"}
-                </button>
-              )}
-              {adjError && <div className="warn-box">{adjError}</div>}
-              {adjExpl && (
-                <>
-                  <Explanation text={adjExpl} />
-                  <button className="ghost" onClick={explainForAdjuster} disabled={adjLoading}>
-                    {adjLoading ? "Regenerating…" : "Regenerate"}
-                  </button>
-                  <SaveToDb save={adjSave} canSave={!!result.prediction_id}
-                    onSave={() => saveExplanation("adjuster")} />
-                </>
-              )}
             </>
           )}
         </section>
