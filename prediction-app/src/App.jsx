@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { loadConfig, predict } from "./api.js";
+import { getModelInfo, loadConfig, predict } from "./api.js";
 
 export default function App() {
   const [config, setConfig] = useState(null);
   const [configError, setConfigError] = useState(null);
+
+  const [modelInfo, setModelInfo] = useState(null);
+  const [modelInfoError, setModelInfoError] = useState(null);
 
   const [values, setValues] = useState({});
   const [thr, setThr] = useState(0.5);
@@ -11,7 +14,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  // Load bundled feature metadata once.
+  // Load bundled feature metadata once (powers the input form).
   useEffect(() => {
     loadConfig()
       .then((cfg) => {
@@ -22,6 +25,17 @@ export default function App() {
         setThr(cfg.default_threshold);
       })
       .catch((e) => setConfigError(e.message));
+  }, []);
+
+  // Fetch the current best model's info live from the API (for display + the
+  // live decision threshold). Non-fatal: the form still works if it fails.
+  useEffect(() => {
+    getModelInfo()
+      .then((info) => {
+        setModelInfo(info);
+        if (info.threshold != null) setThr(info.threshold);
+      })
+      .catch((e) => setModelInfoError(e.message));
   }, []);
 
   const features = useMemo(
@@ -55,7 +69,7 @@ export default function App() {
     const init = {};
     for (const [name, meta] of Object.entries(config.feature_meta)) init[name] = meta.default;
     setValues(init);
-    setThr(config.default_threshold);
+    setThr(modelInfo?.threshold ?? config.default_threshold);
     setResult(null);
     setError(null);
   };
@@ -86,13 +100,12 @@ export default function App() {
       <header>
         <h1>Claim Approval — Prediction</h1>
         <p className="subtitle">
-          Enter a claim's feature values and get the model's prediction. Model:{" "}
-          <span className="pill">
-            {config.model} ({config.stage})
-          </span>{" "}
-          — positive class <strong>Declined</strong>.
+          Enter a claim's feature values and get the model's prediction — positive class{" "}
+          <strong>Declined</strong>.
         </p>
       </header>
+
+      <ModelInfo info={modelInfo} error={modelInfoError} fallback={config} />
 
       <section className="panel">
         <div className="form-grid">
@@ -177,5 +190,95 @@ export default function App() {
         </section>
       )}
     </div>
+  );
+}
+
+const pct = (v) => (v == null ? "—" : (v * 100).toFixed(1) + "%");
+const num = (v) => (v == null ? "—" : Number(v).toFixed(3));
+
+// Live "model card": the current best model's info fetched from the API.
+function ModelInfo({ info, error, fallback }) {
+  if (error && !info) {
+    return (
+      <section className="panel model-info">
+        <h2>Current best model</h2>
+        <p className="note">
+          Live model info unavailable ({error}). Showing bundled defaults:{" "}
+          <span className="pill">
+            {fallback?.model} ({fallback?.stage})
+          </span>
+          . Start a FastAPI backend to load live info.
+        </p>
+      </section>
+    );
+  }
+  if (!info) {
+    return (
+      <section className="panel model-info">
+        <h2>Current best model</h2>
+        <p className="note">Loading model info from the API…</p>
+      </section>
+    );
+  }
+
+  const m = info.test_metrics || {};
+  const metrics = [
+    ["PR-AUC", num(m.pr_auc)],
+    ["ROC-AUC", num(m.roc_auc)],
+    ["F1 (Declined)", num(m.f1_declined)],
+    ["Recall (Declined)", pct(m.recall_declined)],
+    ["Precision (Declined)", pct(m.precision_declined)],
+    ["Balanced Acc", pct(m.balanced_accuracy)],
+  ];
+
+  return (
+    <section className="panel model-info">
+      <h2>
+        Current best model{" "}
+        <span className="badge live">live · /{info.source}</span>
+      </h2>
+      <div className="kv">
+        <span className="k">Model</span>
+        <span>
+          {info.model_name} <span className="note">({info.stage})</span>
+        </span>
+        {info.model_version && (
+          <>
+            <span className="k">Version</span>
+            <span>{info.model_version}</span>
+          </>
+        )}
+        {info.training_date && (
+          <>
+            <span className="k">Trained</span>
+            <span>{new Date(info.training_date).toLocaleString()}</span>
+          </>
+        )}
+        <span className="k">Imbalance</span>
+        <span>{info.imbalance_strategy}</span>
+        <span className="k">Decision threshold</span>
+        <span>{info.threshold}</span>
+        {info.optuna_trials != null && (
+          <>
+            <span className="k">Optuna trials</span>
+            <span>{info.optuna_trials}</span>
+          </>
+        )}
+      </div>
+
+      <div className="metric-row">
+        {metrics.map(([label, val]) => (
+          <div className="metric" key={label}>
+            <div className="label">{label}</div>
+            <div className="mval">{val}</div>
+          </div>
+        ))}
+        <div className="metric de-emph">
+          <div className="label">Accuracy</div>
+          <div className="mval">{pct(m.accuracy)}</div>
+        </div>
+      </div>
+      <p className="note">Test-set metrics (held out). Positive class = Declined.</p>
+    </section>
   );
 }

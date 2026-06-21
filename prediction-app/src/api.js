@@ -14,6 +14,49 @@ export async function loadConfig() {
   return await res.json();
 }
 
+// Fetch the current best model's info from the FastAPI backend.
+// Works against either backend:
+//   - serve_api.py -> GET /metadata (richer: version, training date, ...)
+//   - serve.py     -> GET /model-summary (fallback)
+// Returns a normalized shape, or throws if neither endpoint is reachable.
+export async function getModelInfo() {
+  // Try the richer /metadata first.
+  try {
+    const res = await fetch(`${API_BASE}/metadata`);
+    if (res.ok) {
+      const d = await res.json();
+      return {
+        source: "metadata",
+        model_name: d.model_name,
+        stage: d.stage,
+        model_version: d.model_version ?? null,
+        training_date: d.training_date ?? null,
+        threshold: d.decision_threshold,
+        imbalance_strategy: d.imbalance_strategy,
+        optuna_trials: d.optuna_trials ?? null,
+        test_metrics: d.test_metrics ?? {},
+      };
+    }
+  } catch (_) {
+    /* fall through to /model-summary */
+  }
+
+  const res = await fetch(`${API_BASE}/model-summary`);
+  if (!res.ok) throw new Error(`Could not load model info (${res.status})`);
+  const d = await res.json();
+  return {
+    source: "model-summary",
+    model_name: d.best_model,
+    stage: d.stage,
+    model_version: null,
+    training_date: null,
+    threshold: d.threshold,
+    imbalance_strategy: d.imbalance_strategy,
+    optuna_trials: null,
+    test_metrics: d.test_metrics ?? {},
+  };
+}
+
 export async function predict(features, threshold) {
   const body = { features };
   if (threshold != null) body.threshold = threshold;

@@ -84,3 +84,17 @@ button.ghost:hover { color: var(--text); }
   margin-top: 16px;
 }
 code { background: #0b1220; border-radius: 6px; padding: 1px 5px; }
+.note { color: var(--muted); font-size: 13px; }
+
+/* Model info card */
+.model-info h2 { display: flex; align-items: center; gap: 10px; }
+.badge.live { background: #14532d; color: #bbf7d0; font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; font-size: 14px; margin-bottom: 14px; }
+.kv .k { color: var(--muted); }
+.metric-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.metric { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.metric .label { color: var(--muted); font-size: 12px; }
+.metric .mval { font-size: 18px; font-weight: 700; margin-top: 4px; }
+.metric.de-emph { opacity: 0.55; }
+.metric.de-emph .mval { font-weight: 500; }

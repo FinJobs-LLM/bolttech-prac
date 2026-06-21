@@ -7,10 +7,16 @@ This is a separate project from `../frontend/` (the full dashboard) and does not
 replicates only the "Prediction Demo" functionality.
 
 ## How it works
-- Feature inputs (defaults + categorical options + default threshold) are bundled in
-  `public/feature_config.json`, generated from the trained model's metadata — so the form renders
-  without any backend.
+- Feature inputs (defaults + categorical options) are bundled in `public/feature_config.json`,
+  generated from the trained model's metadata — so the form renders without any backend.
+- On load it fetches the **current best model's info live from the API** and shows a model card
+  (name/stage, version + training date when available, imbalance strategy, decision threshold, and
+  held-out test metrics). It tries `GET /metadata` (serve_api.py — richest) and falls back to
+  `GET /model-summary` (serve.py). The live decision threshold is used as the form default.
 - Inference calls the FastAPI backend via the Vite dev proxy at `/api/predict`.
+
+If the API is unreachable, the model card shows a notice and the form still works using the bundled
+defaults.
 
 ## Run
 
