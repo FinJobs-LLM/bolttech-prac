@@ -329,49 +329,5 @@ updated source always produces fresh layers (no stale-content risk).
 **Tests.** There is **no automated test suite or CI** in the repo. Validation today is manual:
 `npm run build` for the front-ends, importing/starting the backends, and `python src/run_pipeline.py`.
 
----
-
-## 11. Extension Points
-
-- **Add a model family** — extend `ALL_MODELS` (config), add a builder + fit branch in
-  `ml/model_factory.py`, a baseline in `ml/train_baselines.py`, and a search space in
-  `ml/optimize_optuna.suggest_params`.
-- **Add an explanation audience** — add a prompt + generation entry under a new key in
-  `src/prompts/llm_config.yaml`, a `generate_*` function in `llm_explain.py`, and an endpoint in
-  `dashboard_api.py` (and/or `prediction_service_api.py`).
-- **Change the LLM model or prompts** — edit `src/prompts/llm_config.yaml` and bump its `version`; no
-  code change needed.
-- **Add/clarify API endpoints** — both FastAPI apps are plain route modules; add routes and (for the
-  production API) Pydantic schemas.
-- **Evolve the DB schema** — add columns via the `information_schema` migration pattern in `db.py`
-  (`_ensure_extra_columns`), keeping inserts backward-compatible.
-- **Swap persistence** — `db.py` is isolated behind `db_enabled()` / `save_prediction()` /
-  `save_explanation()` / `save_decision()`; another backend can replace it without touching endpoints.
-- **Front-end pages/tabs** — add a page/tab + an `api/` client call; data comes from `dashboard_data.json`
-  or the HTTP API.
-
----
-
-## 12. Known Limitations / Open Questions
-
-- **No automated tests / CI.** Behavior is verified manually. A regression suite (pipeline smoke,
-  endpoint contract, pickle-load) would reduce risk.
-- **Moderate model signal.** On this dataset the selected model's test PR-AUC is ~0.30 (vs a ~0.16 base
-  rate) with low precision for Declined; predictions are decision-support, not autonomous decisions.
-- **Two serving apps share some logic.** `dashboard_api.py` and `prediction_service_api.py` both build
-  model-info dicts and call `llm_explain`; this duplication is intentional (different response shapes)
-  but could be factored if it grows.
-- **Docker `HEALTHCHECK` assumes the default CMD.** It probes `/health`, which exists on
-  `prediction_service_api`; overriding CMD to `dashboard_api:app` (no `/health`) would report unhealthy.
-- **RDS connection is not TLS-enforced** in code (works against the current instance without SSL); add
-  the RDS CA bundle if encrypted connections are required.
-- **Committed model is a snapshot.** `models/best_model.joblib` + `dashboard_data.json` reflect a
-  specific run; retraining with a different `N_TRIALS` changes the headline numbers.
-- **Dev vs image Python.** Developed/validated on Python 3.14 locally; the Docker image pins 3.12
-  (both satisfy `requires-python >=3.11` and the `uv.lock` resolution).
-- **Open question — original raw data.** `data/original_data/` is referenced by
-  `notebooks/preprocessing.ipynb`, but the raw source file is not fully tracked in git; reproducing the
-  preprocessing from scratch requires obtaining that file.
-- **Open question — production front-end serving.** The `/api` proxy is a Vite *dev* feature; a
   production static deployment needs `VITE_API_BASE` baked at build time or a reverse proxy. No
   production web-server/compose config is included.
