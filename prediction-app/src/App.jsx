@@ -499,10 +499,9 @@ export default function App() {
                     <th>Result</th>
                     <th>P(Declined)</th>
                     <th>Threshold</th>
-                    <th>rrp</th>
-                    <th>coverage</th>
-                    <th>claimType</th>
-                    <th>country</th>
+                    {features.map((f) => (
+                      <th key={f}>{f}</th>
+                    ))}
                     <th>Model</th>
                   </tr>
                 </thead>
@@ -522,10 +521,9 @@ export default function App() {
                       <td>{r.probability_declined != null
                         ? (r.probability_declined * 100).toFixed(1) + "%" : "—"}</td>
                       <td>{r.threshold_used}</td>
-                      <td>{r.rrp ?? "—"}</td>
-                      <td>{r.coverage ?? "—"}</td>
-                      <td>{r.claimType ?? "—"}</td>
-                      <td>{r.country ?? "—"}</td>
+                      {features.map((f) => (
+                        <td key={f}>{r[f] ?? "—"}</td>
+                      ))}
                       <td className="note">{r.model_version ?? "—"}</td>
                     </tr>
                   ))}
