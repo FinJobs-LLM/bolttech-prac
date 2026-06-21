@@ -19,7 +19,7 @@ operational claim-scoring app — that is `prediction-app`.
 ## How it relates to the rest of the repo
 - Reads `public/dashboard_data.json`, which is produced by the Python pipeline
   (`src/run_pipeline.py`) and copied into this app's `public/` automatically at the end of a run.
-- The **Prediction Demo** page calls the FastAPI backend (`src/serve.py`) at `/api/predict`.
+- The **Prediction Demo** page calls the FastAPI backend (`src/dashboard_api.py`) at `/api/predict`.
 - All other pages render from the static JSON and work **without** the backend running.
 
 ## Install
@@ -33,9 +33,9 @@ npm install
 ```bash
 npm run dev          # http://localhost:5173
 ```
-The Vite dev server proxies `/api/*` → `http://localhost:8000` (the `serve.py` backend), so the
+The Vite dev server proxies `/api/*` → `http://localhost:8000` (the `dashboard_api.py` backend), so the
 Prediction Demo works without CORS issues. Start the backend separately if you want that page live:
-`uv run uvicorn serve:app --app-dir src --port 8000` (from the repo root).
+`uv run uvicorn dashboard_api:app --app-dir src --port 8000` (from the repo root).
 
 ## Build
 ```bash

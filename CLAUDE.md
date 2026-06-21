@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This project predicts insurance device-claim approval (`status`: Declined=1 positive, Completed=0).
 It now contains a full ML system — see `README.md` for the authoritative guide:
 - `src/` — training pipeline (`run_pipeline.py` orchestrates), Optuna optimization, MLflow tracking,
-  threshold tuning, evaluation, explainability, and a FastAPI service (`serve.py`).
+  threshold tuning, evaluation, explainability, and a FastAPI service (`dashboard_api.py`).
 - `model-dashboard/` — Vite + React model-optimization explainability dashboard (front-end app #1).
 - `prediction-app/` — Vite + React claim prediction & review app (front-end app #2).
 - `reports/`, `models/`, `mlruns/` — generated artifacts (run `python src/run_pipeline.py`).

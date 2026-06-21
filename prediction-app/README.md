@@ -24,11 +24,11 @@ The app has a tab menu:
   generated from the trained model's metadata — so the form renders without any backend.
 - On load it fetches the **current best model's info live from the API** and shows a model card
   (name/stage, version + training date when available, imbalance strategy, decision threshold, and
-  held-out test metrics). It tries `GET /metadata` (serve_api.py — richest) and falls back to
-  `GET /model-summary` (serve.py). The live decision threshold is used as the form default.
+  held-out test metrics). It tries `GET /metadata` (prediction_service_api.py — richest) and falls back to
+  `GET /model-summary` (dashboard_api.py). The live decision threshold is used as the form default.
 - It also shows the serving model's **feature importance** as a bar chart (rendered with plain CSS —
-  no chart library), fetched live from `GET /metadata` (serve_api.py) or `GET /feature-importance`
-  (serve.py).
+  no chart library), fetched live from `GET /metadata` (prediction_service_api.py) or `GET /feature-importance`
+  (dashboard_api.py).
 - An **AI explanation** panel (button-triggered) calls `GET /explain`, which generates a plain-English
   summary of the model + its feature importance server-side using LangChain + `gpt-4o-mini`. This
   requires the backend to have `OPENAI_API_KEY` set; without it the panel shows a clear notice and the
@@ -52,8 +52,8 @@ npm install
 npm run dev            # http://localhost:5174
 ```
 
-The proxy targets `http://localhost:8000` (the `serve.py` backend) by default. To target the
-production serving API (`serve_api.py`, port 8001) instead:
+The proxy targets `http://localhost:8000` (the `dashboard_api.py` backend) by default. To target the
+production serving API (`prediction_service_api.py`, port 8001) instead:
 
 ```bash
 API_TARGET=http://localhost:8001 npm run dev
@@ -62,7 +62,7 @@ API_TARGET=http://localhost:8001 npm run dev
 Make sure one of the backends is running (see the main project README), e.g.:
 
 ```bash
-uv run uvicorn serve:app --app-dir src --port 8000
+uv run uvicorn dashboard_api:app --app-dir src --port 8000
 ```
 
 ## Production build (important)

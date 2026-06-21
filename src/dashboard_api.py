@@ -1,7 +1,7 @@
 """FastAPI service exposing the trained model and the dashboard data.
 
 Run from the project root:
-    .venv/bin/uvicorn serve:app --app-dir src --reload --port 8000
+    .venv/bin/uvicorn dashboard_api:app --app-dir src --reload --port 8000
 
 Endpoints:
     GET  /                    health / index

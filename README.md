@@ -54,8 +54,8 @@ bolttech-prac/
 │   │   └── mlflow_tracking.py   # MLflow helpers
 │   ├── run_pipeline.py          # ORCHESTRATOR — trains/optimizes, writes all artifacts
 │   ├── load_dataset_to_db.py    # load the dataset into a SQL table
-│   ├── serve.py                 # FastAPI dashboard backend (uvicorn serve:app)
-│   ├── serve_api.py             # FastAPI production serving API (uvicorn serve_api:app)
+│   ├── dashboard_api.py                 # FastAPI dashboard backend (uvicorn dashboard_api:app)
+│   ├── prediction_service_api.py             # FastAPI production serving API (uvicorn prediction_service_api:app)
 │   ├── db.py                    # RDS/MySQL persistence
 │   ├── llm_explain.py           # LangChain + gpt-4o-mini explanations
 │   └── prompts/                 # LLM prompt templates (per audience)
@@ -96,7 +96,7 @@ uv sync                 # creates .venv and installs the locked dependencies
 ```
 
 Then either activate the env (`source .venv/bin/activate`) or prefix commands with `uv run`
-(e.g. `uv run python src/run_pipeline.py`, `uv run uvicorn serve_api:app --app-dir src --port 8001`).
+(e.g. `uv run python src/run_pipeline.py`, `uv run uvicorn prediction_service_api:app --app-dir src --port 8001`).
 
 Front-end (Node 18+) — there are two independent apps; install whichever you'll run:
 
@@ -140,7 +140,7 @@ hyperparameters, the imbalance strategy, validation + test metrics, the chosen t
 
 ```bash
 source .venv/bin/activate
-uvicorn serve:app --app-dir src --reload --port 8000
+uvicorn dashboard_api:app --app-dir src --reload --port 8000
 # docs at http://localhost:8000/docs
 ```
 
@@ -151,7 +151,7 @@ Endpoints: `POST /predict`, `GET /model-summary`, `GET /model-comparison`,
 model and its feature importance. It requires an OpenAI key in the server environment:
 
 ```bash
-OPENAI_API_KEY=sk-... uv run uvicorn serve:app --app-dir src --port 8000
+OPENAI_API_KEY=sk-... uv run uvicorn dashboard_api:app --app-dir src --port 8000
 ```
 
 Without the key, `/explain` returns `503` with a clear message (other endpoints are unaffected).
@@ -208,13 +208,13 @@ curl -X POST localhost:8000/predict -H 'Content-Type: application/json' \
 Unspecified features are imputed automatically. The decision uses the tuned threshold unless you
 pass `"threshold"` in the request.
 
-### Production serving API (`serve_api.py`)
+### Production serving API (`prediction_service_api.py`)
 
-A second, ops-focused inference service (separate from `serve.py`, which backs the dashboard) with
+A second, ops-focused inference service (separate from `dashboard_api.py`, which backs the dashboard) with
 health/readiness probes, batch inference, and service metrics:
 
 ```bash
-uvicorn serve_api:app --app-dir src --port 8001
+uvicorn prediction_service_api:app --app-dir src --port 8001
 # docs at http://localhost:8001/docs
 ```
 
@@ -279,10 +279,10 @@ docker build -t bolttech-prac .
 docker run --rm -p 8000:8000 bolttech-prac      # API + docs at http://localhost:8000/docs
 ```
 
-The default command runs `serve_api:app`. Override it to run the dashboard backend or retrain:
+The default command runs `prediction_service_api:app`. Override it to run the dashboard backend or retrain:
 
 ```bash
-docker run --rm -p 8000:8000 bolttech-prac uvicorn serve:app --app-dir src --host 0.0.0.0 --port 8000
+docker run --rm -p 8000:8000 bolttech-prac uvicorn dashboard_api:app --app-dir src --host 0.0.0.0 --port 8000
 docker run --rm bolttech-prac python src/run_pipeline.py
 ```
 

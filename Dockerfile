@@ -67,6 +67,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"
 
-# Default: the production serving API (serve_api.py). Override the command to
-# run the dashboard backend (serve:app) or the training pipeline instead.
-CMD ["uvicorn", "serve_api:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "8000"]
+# Default: the production serving API (prediction_service_api.py). Override the command to
+# run the dashboard backend (dashboard_api:app) or the training pipeline instead.
+CMD ["uvicorn", "prediction_service_api:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "8000"]

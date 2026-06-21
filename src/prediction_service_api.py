@@ -1,12 +1,12 @@
 """Production model-serving API for the claim-approval model.
 
-A focused inference service (separate from `serve.py`, which backs the React
+A focused inference service (separate from `dashboard_api.py`, which backs the React
 dashboard). It loads `models/best_model.joblib` + `best_model_meta.json` once and
 exposes operational endpoints with request/response schemas, input validation,
 structured error handling and in-memory service metrics.
 
 Run from the project root:
-    .venv/bin/uvicorn serve_api:app --app-dir src --port 8001
+    .venv/bin/uvicorn prediction_service_api:app --app-dir src --port 8001
     # docs: http://localhost:8001/docs
 
 Endpoints:
