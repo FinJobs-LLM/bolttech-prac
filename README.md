@@ -169,6 +169,9 @@ Saving is **best-effort**: if the DB is unset or unreachable, `/predict` still r
 (the response includes `"saved_to_db": true|false`). The EC2/host must be able to reach RDS on 3306
 (RDS security group + VPC). Uses SQLAlchemy + PyMySQL.
 
+View saved rows via **`GET /predictions/recent?limit=25`** (newest first; `enabled:false` when the DB
+isn't configured), or the **History** tab in the prediction-app.
+
 ```bash
 curl -X POST localhost:8000/predict -H 'Content-Type: application/json' \
   -d '{"features": {"rrp": 1799, "excessFee": 139, "coverage": "ADLD",

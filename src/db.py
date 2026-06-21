@@ -121,3 +121,24 @@ def save_prediction(model, feature_row: dict, prediction: dict) -> bool:
     except Exception as exc:  # best-effort: never break prediction serving
         log.warning("Failed to save prediction to DB: %s: %s", type(exc).__name__, exc)
         return False
+
+
+def recent_predictions(limit: int = 20):
+    """Return the most recent saved predictions (newest first).
+
+    Returns None if the DB is not configured, or [] on any read error / if the
+    table does not exist yet.
+    """
+    engine = _get_engine()
+    if engine is None:
+        return None
+    try:
+        limit = max(1, min(int(limit), 500))
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(f"SELECT * FROM `{TABLE}` ORDER BY `id` DESC LIMIT {limit}")
+            ).mappings().all()
+        return [dict(r) for r in rows]
+    except Exception as exc:
+        log.warning("recent_predictions failed: %s: %s", type(exc).__name__, exc)
+        return []

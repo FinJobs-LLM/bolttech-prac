@@ -70,7 +70,8 @@ def index():
         "best_model": _META.get("model_type"),
         "endpoints": ["/predict", "/model-summary", "/model-comparison",
                       "/threshold-analysis", "/feature-importance", "/explain",
-                      "/explain-prediction", "/explain-prediction-customer", "/dashboard"],
+                      "/explain-prediction", "/explain-prediction-customer",
+                      "/predictions/recent", "/dashboard"],
     }
 
 
@@ -103,6 +104,18 @@ def predict(req: PredictRequest):
         _MODEL, row, {**result, "model_version": _META.get("model_version")})
     result["saved_to_db"] = saved
     return result
+
+
+@app.get("/predictions/recent")
+def predictions_recent(limit: int = 20):
+    """Most recent predictions saved to the database (newest first).
+
+    Returns enabled=false when the DB is not configured."""
+    import db
+    rows = db.recent_predictions(limit)
+    if rows is None:
+        return {"enabled": False, "count": 0, "predictions": []}
+    return {"enabled": True, "count": len(rows), "predictions": rows}
 
 
 @app.get("/model-summary")

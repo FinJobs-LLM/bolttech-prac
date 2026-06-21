@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   explainPrediction, explainPredictionCustomer, getExplanation, getFeatureImportance,
-  getModelInfo, loadConfig, predict,
+  getModelInfo, getRecentPredictions, loadConfig, predict,
 } from "./api.js";
 
 export default function App() {
@@ -34,7 +34,12 @@ export default function App() {
   const [custLoading, setCustLoading] = useState(false);
   const [custError, setCustError] = useState(null);
 
-  const [tab, setTab] = useState("predict"); // predict | model | adjuster | customer
+  // Saved-prediction history (from the database).
+  const [history, setHistory] = useState(null); // {enabled, count, predictions}
+  const [histLoading, setHistLoading] = useState(false);
+  const [histError, setHistError] = useState(null);
+
+  const [tab, setTab] = useState("predict"); // predict | model | adjuster | customer | history
 
   // Load bundled feature metadata once (powers the input form).
   useEffect(() => {
@@ -66,6 +71,11 @@ export default function App() {
       .then(setImportance)
       .catch((e) => setImportanceError(e.message));
   }, []);
+
+  // Refresh saved-prediction history whenever the History tab is opened.
+  useEffect(() => {
+    if (tab === "history") loadHistory();
+  }, [tab]);
 
   const features = useMemo(
     () => (config ? Object.keys(config.feature_meta) : []),
@@ -113,6 +123,18 @@ export default function App() {
       setAdjError(e.message);
     } finally {
       setAdjLoading(false);
+    }
+  };
+
+  const loadHistory = async () => {
+    setHistLoading(true);
+    setHistError(null);
+    try {
+      setHistory(await getRecentPredictions(25));
+    } catch (e) {
+      setHistError(e.message);
+    } finally {
+      setHistLoading(false);
     }
   };
 
@@ -182,6 +204,7 @@ export default function App() {
     ["model", "Model & Features"],
     ["adjuster", "Claims Adjuster"],
     ["customer", "Customer"],
+    ["history", "History"],
   ];
 
   return (
@@ -438,6 +461,77 @@ export default function App() {
                 </>
               )}
             </>
+          )}
+        </section>
+      )}
+
+      {/* ---------------- History tab ---------------- */}
+      {tab === "history" && (
+        <section className="panel">
+          <h2 style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            Saved Predictions
+            <button className="ghost" onClick={loadHistory} disabled={histLoading}
+              style={{ padding: "6px 12px", fontSize: 13 }}>
+              {histLoading ? "Loading…" : "Refresh"}
+            </button>
+          </h2>
+          <p className="note" style={{ marginTop: 0 }}>
+            The most recent predictions saved to the database (newest first). Every time you click
+            Predict, the claim's features and the result are stored.
+          </p>
+
+          {histError && <div className="warn-box">{histError}</div>}
+          {history && !history.enabled && (
+            <div className="warn-box">
+              Saving to the database is not configured on the server (no DB connection set).
+            </div>
+          )}
+          {history && history.enabled && history.predictions.length === 0 && !histLoading && (
+            <p className="note">No saved predictions yet — run a prediction first.</p>
+          )}
+          {history && history.enabled && history.predictions.length > 0 && (
+            <div style={{ overflowX: "auto" }}>
+              <table className="history">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Saved at</th>
+                    <th>Result</th>
+                    <th>P(Declined)</th>
+                    <th>Threshold</th>
+                    <th>rrp</th>
+                    <th>coverage</th>
+                    <th>claimType</th>
+                    <th>country</th>
+                    <th>Model</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.predictions.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.id}</td>
+                      <td>{r.created_at ? new Date(r.created_at).toLocaleString() : "—"}</td>
+                      <td>
+                        <span className="badge" style={{
+                          background: r.predicted_label ? "#ef4444" : "#22c55e",
+                          color: r.predicted_label ? "white" : "#06281a",
+                        }}>
+                          {r.predicted_class}
+                        </span>
+                      </td>
+                      <td>{r.probability_declined != null
+                        ? (r.probability_declined * 100).toFixed(1) + "%" : "—"}</td>
+                      <td>{r.threshold_used}</td>
+                      <td>{r.rrp ?? "—"}</td>
+                      <td>{r.coverage ?? "—"}</td>
+                      <td>{r.claimType ?? "—"}</td>
+                      <td>{r.country ?? "—"}</td>
+                      <td className="note">{r.model_version ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
       )}

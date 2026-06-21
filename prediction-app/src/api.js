@@ -168,3 +168,20 @@ export const explainPrediction = (features, threshold) =>
 
 export const explainPredictionCustomer = (features, threshold) =>
   explainFor("explain-prediction-customer", features, threshold);
+
+// Recent saved predictions from the database (newest first).
+// Returns { enabled, count, predictions: [...] }.
+export async function getRecentPredictions(limit = 25) {
+  const res = await fetchWithTimeout(`${API_BASE}/predictions/recent?limit=${limit}`);
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const j = await res.json();
+      msg = j.detail || j.error?.message || msg;
+    } catch (_) {
+      /* keep status */
+    }
+    throw new Error(msg);
+  }
+  return await res.json();
+}
