@@ -29,3 +29,6 @@ catboost_info/
 .env.*
 !.env.example
 
+
+# pytest
+.pytest_cache/

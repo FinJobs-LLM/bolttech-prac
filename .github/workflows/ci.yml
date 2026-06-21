@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install OpenMP runtime (needed by LightGBM/XGBoost)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgomp1
+
+      - name: Install dependencies (from uv.lock)
+        run: uv sync --frozen
+
+      - name: Run pytest
+        run: uv run --frozen --with pytest pytest -q
