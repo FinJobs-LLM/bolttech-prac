@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { getFeatureImportance, getModelInfo, loadConfig, predict } from "./api.js";
+import {
+  getExplanation, getFeatureImportance, getModelInfo, loadConfig, predict,
+} from "./api.js";
 
 export default function App() {
   const [config, setConfig] = useState(null);
@@ -10,6 +12,10 @@ export default function App() {
 
   const [importance, setImportance] = useState(null);
   const [importanceError, setImportanceError] = useState(null);
+
+  const [explanation, setExplanation] = useState(null);
+  const [explLoading, setExplLoading] = useState(false);
+  const [explError, setExplError] = useState(null);
 
   const [values, setValues] = useState({});
   const [thr, setThr] = useState(0.5);
@@ -84,6 +90,19 @@ export default function App() {
     setError(null);
   };
 
+  const generateExplanation = async () => {
+    setExplLoading(true);
+    setExplError(null);
+    try {
+      const d = await getExplanation();
+      setExplanation(d.explanation);
+    } catch (e) {
+      setExplError(e.message);
+    } finally {
+      setExplLoading(false);
+    }
+  };
+
   if (configError) {
     return (
       <div className="page">
@@ -118,6 +137,34 @@ export default function App() {
       <ModelInfo info={modelInfo} error={modelInfoError} fallback={config} />
 
       <FeatureImportance data={importance} error={importanceError} />
+
+      <section className="panel">
+        <h2>
+          AI explanation <span className="badge ai">gpt-4o-mini</span>
+        </h2>
+        <p className="note" style={{ marginTop: 0 }}>
+          A plain-English summary of the model and what drives it, generated on the server with
+          LangChain. Click to generate (cached after the first request).
+        </p>
+        {!explanation && (
+          <button className="primary" onClick={generateExplanation} disabled={explLoading}>
+            {explLoading ? "Generating…" : "Generate AI explanation"}
+          </button>
+        )}
+        {explError && <div className="warn-box">{explError}</div>}
+        {explanation && (
+          <>
+            <div className="explanation">
+              {explanation.split(/\n{2,}/).map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+            </div>
+            <button className="ghost" onClick={generateExplanation} disabled={explLoading}>
+              {explLoading ? "Regenerating…" : "Regenerate"}
+            </button>
+          </>
+        )}
+      </section>
 
       <section className="panel">
         <div className="form-grid">

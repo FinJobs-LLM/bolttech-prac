@@ -23,3 +23,8 @@ mlflow.db
 
 # CatBoost training logs
 catboost_info/
+
+# Secrets — never commit API keys
+.env
+.env.*
+

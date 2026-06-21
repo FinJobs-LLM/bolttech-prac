@@ -38,6 +38,7 @@ app.add_middleware(
 _MODEL: ClaimModel | None = None
 _META: dict = {}
 _DASH: dict = {}
+_EXPLANATION: dict = {}  # cache: {"text": str} so we call the LLM at most once per process
 
 
 def _load():
@@ -68,7 +69,7 @@ def index():
         "model_loaded": _MODEL is not None,
         "best_model": _META.get("model_type"),
         "endpoints": ["/predict", "/model-summary", "/model-comparison",
-                      "/threshold-analysis", "/feature-importance", "/dashboard"],
+                      "/threshold-analysis", "/feature-importance", "/explain", "/dashboard"],
     }
 
 
@@ -132,6 +133,42 @@ def feature_importance():
     best = _DASH.get("best_model", {})
     return {"model": best.get("model"),
             "feature_importance": best.get("feature_importance", [])}
+
+
+@app.get("/explain")
+def explain(refresh: bool = False):
+    """LLM-generated (gpt-4o-mini via LangChain) plain-English explanation of the
+    serving model and its feature importance. Cached after first generation."""
+    _load()
+    if _MODEL is None:
+        raise HTTPException(503, "Model not trained yet. Run src/run_pipeline.py first.")
+
+    from llm_explain import explanation_available, generate_model_explanation
+
+    if not explanation_available():
+        raise HTTPException(
+            503, "OPENAI_API_KEY is not set on the server, so AI explanations are disabled.")
+
+    if _EXPLANATION.get("text") and not refresh:
+        return {"explanation": _EXPLANATION["text"], "cached": True,
+                "model": _META.get("model_type"), "model_version": _META.get("model_version")}
+
+    model_info = {
+        "model_name": _META.get("model_type"),
+        "stage": _META.get("stage"),
+        "model_version": _META.get("model_version"),
+        "imbalance_strategy": _META.get("imbalance_strategy"),
+        "threshold": _META.get("threshold"),
+        "test_metrics": _META.get("test_metrics", {}),
+    }
+    fi = _META.get("feature_importance") or _DASH.get("best_model", {}).get("feature_importance", [])
+    try:
+        text = generate_model_explanation(model_info, fi)
+    except Exception as exc:
+        raise HTTPException(502, f"LLM explanation failed: {type(exc).__name__}: {exc}")
+    _EXPLANATION["text"] = text
+    return {"explanation": text, "cached": False,
+            "model": _META.get("model_type"), "model_version": _META.get("model_version")}
 
 
 @app.get("/dashboard")

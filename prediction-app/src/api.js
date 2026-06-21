@@ -79,6 +79,24 @@ export async function getFeatureImportance() {
   return { model: d.model, items: d.feature_importance || [] };
 }
 
+// Fetch the LLM-generated explanation of the serving model (gpt-4o-mini via
+// LangChain, server-side). Returns { explanation, cached, model, model_version }.
+// Throws with a readable message (e.g. when the server has no OPENAI_API_KEY).
+export async function getExplanation(refresh = false) {
+  const res = await fetch(`${API_BASE}/explain${refresh ? "?refresh=true" : ""}`);
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const j = await res.json();
+      msg = j.detail || j.error?.message || msg; // serve.py vs serve_api shapes
+    } catch (_) {
+      /* keep status */
+    }
+    throw new Error(msg);
+  }
+  return await res.json();
+}
+
 export async function predict(features, threshold) {
   const body = { features };
   if (threshold != null) body.threshold = threshold;

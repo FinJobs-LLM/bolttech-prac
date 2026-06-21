@@ -16,6 +16,10 @@ replicates only the "Prediction Demo" functionality.
 - It also shows the serving model's **feature importance** as a bar chart (rendered with plain CSS —
   no chart library), fetched live from `GET /metadata` (serve_api.py) or `GET /feature-importance`
   (serve.py).
+- An **AI explanation** panel (button-triggered) calls `GET /explain`, which generates a plain-English
+  summary of the model + its feature importance server-side using LangChain + `gpt-4o-mini`. This
+  requires the backend to have `OPENAI_API_KEY` set; without it the panel shows a clear notice and the
+  rest of the app still works.
 - Inference calls the FastAPI backend via the Vite dev proxy at `/api/predict`.
 
 If the API is unreachable, the model card shows a notice and the form still works using the bundled

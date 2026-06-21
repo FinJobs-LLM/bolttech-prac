@@ -137,7 +137,16 @@ uvicorn serve:app --app-dir src --reload --port 8000
 ```
 
 Endpoints: `POST /predict`, `GET /model-summary`, `GET /model-comparison`,
-`GET /threshold-analysis`, `GET /feature-importance`, `GET /dashboard`.
+`GET /threshold-analysis`, `GET /feature-importance`, `GET /explain`, `GET /dashboard`.
+
+`GET /explain` returns an LLM-generated (LangChain + `gpt-4o-mini`) plain-English explanation of the
+model and its feature importance. It requires an OpenAI key in the server environment:
+
+```bash
+OPENAI_API_KEY=sk-... uv run uvicorn serve:app --app-dir src --port 8000
+```
+
+Without the key, `/explain` returns `503` with a clear message (other endpoints are unaffected).
 
 ```bash
 curl -X POST localhost:8000/predict -H 'Content-Type: application/json' \
