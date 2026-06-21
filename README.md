@@ -57,7 +57,9 @@ bolttech-prac/
 ├── notebooks/model_experiment_summary.ipynb
 ├── docs/
 │   ├── mlflow.md                # role of MLflow (experiment tracking)
-│   └── optuna.md                # role of Optuna (hyperparameter search)
+│   ├── optuna.md                # role of Optuna (hyperparameter search)
+│   ├── hyperparameter_importance.md  # how hyperparameter importance is computed
+│   └── feature_importance.md         # how feature importance is computed
 ├── requirements.txt
 └── README.md
 ```
@@ -65,6 +67,8 @@ bolttech-prac/
 ## Documentation
 - [`docs/optuna.md`](docs/optuna.md) — how Optuna searches hyperparameters (objective = validation PR-AUC, search spaces, reproducibility, trial count).
 - [`docs/mlflow.md`](docs/mlflow.md) — how MLflow tracks every model and trial (run hierarchy, what's logged, how to view).
+- [`docs/hyperparameter_importance.md`](docs/hyperparameter_importance.md) — how hyperparameter importance is computed (Optuna fANOVA over the search).
+- [`docs/feature_importance.md`](docs/feature_importance.md) — how feature importance is computed (per-family model-internal importance + one-hot grouping).
 
 ---
 
